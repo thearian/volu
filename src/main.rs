@@ -14,7 +14,15 @@ use std::time::{Instant, Duration};
 struct Args {
     /// The parent directory
     #[clap(default_value = ".")]
-    dir: String
+    dir: String,
+
+    /// Print the main directories
+    #[clap(short,long)]
+    print: bool,
+
+    /// Sort the main directories
+    #[clap(short,long)]
+    sort: bool
 }
 
 trait Commas {
@@ -23,6 +31,7 @@ trait Commas {
 impl Commas for u64 {
     fn add_commas(&self) -> String {
         let mut s = self.to_string();
+        if s.len() < 2 { return s }
         let range = (1..s.len()-2).rev();
         for i in range.step_by(3) {
             s.insert(i, ',');
@@ -45,25 +54,34 @@ impl Hms for Duration {
     }
 }
 
+struct DirMap {
+    dirname: String,
+    size: u64
+}
+
 fn main() {
     let args = Args::parse();
     let path = Path::new(&args.dir);
     let now = Instant::now();
     
+    let mut dir_map: Vec<DirMap> = Vec::new();
     let mut count = 0u64;
-    let size = dir_size(path, &mut count);
+    let size = dir_size(path, &mut count, &mut dir_map);
     let time = now.elapsed();
+
+    if args.print {
+        print_dir_map(dir_map, args.sort);
+    }
 
     println!(
         "{} files indexed at {}\n\n {} bytes",
         count,
         time.to_hms(),
         size.add_commas()
-    )
+    );
 }
 
-
-fn dir_size(path: &Path, count: &mut u64) -> u64 {
+fn dir_size(path: &Path, count: &mut u64, dir_map: &mut Vec<DirMap>) -> u64 {
     if !path.exists() { return 0 }
     if path.is_file() {
         *count += 1;
@@ -76,9 +94,35 @@ fn dir_size(path: &Path, count: &mut u64) -> u64 {
         for child in read_dir(path).unwrap() {
             let child = child.unwrap();
             let child_path = child.path();
-            size += dir_size(&child_path, count);
+            size += dir_size(&child_path, count, dir_map);
         }
+        dir_map.push(DirMap {
+            dirname: path.to_str().unwrap().to_owned(),
+            size: size
+        });
         return size;
     }
     return 0u64;
+}
+
+fn print_dir_map(dir_map: Vec<DirMap>, sort: bool) {
+    let mut filtered = filter_dir_map(&dir_map);
+    if sort {
+        filtered.sort_by(|a, b| b.size.cmp(&a.size))
+    }
+    for dir in filtered {
+        println!("{}\t\t{}", dir.size.add_commas(), dir.dirname);
+    }
+}
+
+fn filter_dir_map(dir_map: &Vec<DirMap>) -> Vec<&DirMap> {
+    dir_map
+        .iter().filter(|dir| {
+            let length = dir.dirname
+                .split("/")
+                .collect::<Vec<&str>>()
+                .len();
+            length < 5
+        })
+        .collect::<Vec<&DirMap>>()
 }
