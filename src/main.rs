@@ -77,7 +77,7 @@ fn main() {
     println!("");
 
     if args.print {
-        print_dir_map(dir_map, args.sort, args.limit);
+        print_dir_map(dir_map, size, args.sort, args.limit);
     }
 
     println!(
@@ -117,17 +117,21 @@ struct Group<'a> {
     children: Vec<Group<'a>>
 }
 
-fn print_dir_map(dir_map: Vec<DirMap>, sort: bool, limit: u8) {
+fn print_dir_map(dir_map: Vec<DirMap>, size: u64, sort: bool, limit: u8) {
     let mut grouped = group_dir_map(&dir_map);
     if sort {
         grouped.sort_by(|a, b| b.dir_map.size.cmp(&a.dir_map.size))
     }
-    println!("SIZE\tCHILDREN\tDIRECTORY");
+
+    let space_count = size.add_commas().len() as u8;
+    println!("SIZE  {}SUBS\tDIRECTORY", count_to_space(space_count - 4));
     for (index, grp) in grouped.iter().enumerate() {
         if limit != 0 && index as u8 > limit { break }
+        let parent_dir_size = grp.dir_map.size.add_commas();
         println!(
-            "{}\t({})\t{}",
-            grp.dir_map.size.add_commas(),
+            "{}  {}( {} )\t{}",
+            parent_dir_size,
+            count_to_space(space_count - parent_dir_size.len() as u8),
             grp.children.len(),
             grp.dir_map.dirname
         );
@@ -156,4 +160,10 @@ fn group_dir_map(dir_map: &Vec<DirMap>) -> Vec<Group> {
         }
     };
     groupes
+}
+
+fn count_to_space(count: u8) -> String {
+    (0..count)
+        .map(|_| ' ')
+        .collect::<String>()
 }
