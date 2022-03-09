@@ -20,13 +20,17 @@ struct Args {
     #[clap(short,long)]
     print: bool,
 
-    /// Sort the parent directories [needs --print]
+    /// Sort the parent directories
     #[clap(short,long)]
     sort: bool,
 
-    /// Limit the parent directories [needs --print and --sort]
-    #[clap(short,long,default_value = "0")]
-    limit: u8 
+    /// Sort and limit the parent directories
+    #[clap(short,long,default_value = "25")]
+    limit: u8,
+
+    /// Print all the parent directories, no limit
+    #[clap(short,long)]
+    all: bool
 }
 
 trait Commas {
@@ -76,8 +80,8 @@ fn main() {
     // this is for print design dont touch it. thanks :)
     println!("");
 
-    if args.print {
-        print_dir_map(dir_map, size, args.sort, args.limit);
+    if args.print || args.sort || args.limit != 25 {
+        print_dir_map(dir_map, size, args.sort, args.limit, args.all);
     }
 
     println!(
@@ -117,7 +121,7 @@ struct Group<'a> {
     children: Vec<Group<'a>>
 }
 
-fn print_dir_map(dir_map: Vec<DirMap>, size: u64, sort: bool, limit: u8) {
+fn print_dir_map(dir_map: Vec<DirMap>, size: u64, sort: bool, limit: u8, all: bool) {
     let mut grouped = group_dir_map(&dir_map);
     if sort {
         grouped.sort_by(|a, b| b.dir_map.size.cmp(&a.dir_map.size))
@@ -126,7 +130,7 @@ fn print_dir_map(dir_map: Vec<DirMap>, size: u64, sort: bool, limit: u8) {
     let space_count = size.add_commas().len() as u8;
     println!("SIZE  {}SUBS\tDIRECTORY", count_to_space(space_count - 4));
     for (index, grp) in grouped.iter().enumerate() {
-        if limit != 0 && index as u8 > limit { break }
+        if all || index as u8 > limit { break }
         let parent_dir_size = grp.dir_map.size.add_commas();
         println!(
             "{}  {}( {} )\t{}",
