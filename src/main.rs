@@ -3,6 +3,7 @@ use std::fs::{metadata, read_dir};
 use std::path::Path;
 use std::time::{Instant, Duration};
 use indicatif::{ProgressStyle, ProgressBar, MultiProgress};
+use std::thread;
 
 /// Size of directory optic
 #[derive(Parser, Debug)]
@@ -80,7 +81,8 @@ fn main() {
     
     let mut dir_map: Vec<DirMap> = Vec::new();
     let mut count = 0u64;
-    let size = dir_size(path, &mut count, &mut dir_map, &progress_steam,  &progress_style);
+    let mut size = 0u64;
+    dir_size(path,&mut size, &mut count, &mut dir_map, &progress_steam,  &progress_style);
     let time = now.elapsed();
 
     // this is for print design dont touch it. thanks :)
@@ -100,23 +102,23 @@ fn main() {
 
 fn dir_size(
     path: &Path,
+    size: &mut u64,
     count: &mut u64,
     dir_map: &mut Vec<DirMap>,
     progress_stream: &MultiProgress,
     progress_style: &ProgressStyle
-) -> u64 {
-    if !path.exists() { return 0 }
+) {
+    if !path.exists() { return }
     if path.is_file() {
         *count += 1;
-        return metadata(path)
+        *size += metadata(path)
             .unwrap()
             .len();
     }
     if path.is_dir() {
         let pb = progress_stream.add(ProgressBar::new_spinner());
         pb.set_style(progress_style.clone());
-        pb.set_prefix(format!("[{}]", count));
-        let mut size = 0;
+        pb.set_prefix(format!("[{}]", size.add_commas()));
         for child in read_dir(path).unwrap() {
             let child = child.unwrap();
             let child_path = child.path();
@@ -127,8 +129,9 @@ fn dir_size(
                     .unwrap()
             );
             pb.inc(1);
-            size += dir_size(
+            dir_size(
                 &child_path,
+                size,
                 count,
                 dir_map,
                 progress_stream,
@@ -137,11 +140,9 @@ fn dir_size(
         }
         dir_map.push(DirMap {
             dirname: path.to_str().unwrap().to_owned(),
-            size: size
+            size: *size
         });
-        return size;
-    }
-    return 0u64;
+    };
 }
 
 struct Group<'a> {
@@ -156,14 +157,20 @@ fn print_dir_map(dir_map: Vec<DirMap>, size: u64, sort: bool, limit: u8, all: bo
     }
 
     let space_count = size.add_commas().len() as u8;
-    println!("SIZE  {}SUBS\tDIRECTORY", count_to_space(space_count - 4));
+    println!(
+        "SIZE  {}SUBS\tDIRECTORY",
+        count_to_space(if space_count > 4 {space_count - 4} else {0})
+    );
     for (index, grp) in grouped.iter().enumerate() {
         if all || index as u8 > limit { break }
         let parent_dir_size = grp.dir_map.size.add_commas();
         println!(
             "{}  {}( {} )\t{}",
             parent_dir_size,
-            count_to_space(space_count - parent_dir_size.len() as u8),
+            count_to_space(
+                if space_count > parent_dir_size.len() as u8 {space_count - parent_dir_size.len() as u8}
+                else {0}
+            ),
             grp.children.len(),
             grp.dir_map.dirname
         );
