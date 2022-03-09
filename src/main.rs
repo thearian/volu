@@ -74,7 +74,7 @@ fn main() {
     }
 
     println!(
-        "{} files indexed at {}\n\n {} bytes",
+        "\t{} files indexed at {}\n\t{} bytes",
         count,
         time.to_hms(),
         size.add_commas()
@@ -105,24 +105,47 @@ fn dir_size(path: &Path, count: &mut u64, dir_map: &mut Vec<DirMap>) -> u64 {
     return 0u64;
 }
 
-fn print_dir_map(dir_map: Vec<DirMap>, sort: bool) {
-    let mut filtered = filter_dir_map(&dir_map);
-    if sort {
-        filtered.sort_by(|a, b| b.size.cmp(&a.size))
-    }
-    for dir in filtered {
-        println!("{}\t\t{}", dir.size.add_commas(), dir.dirname);
-    }
+struct Group<'a> {
+    dir_map: &'a DirMap,
+    children: Vec<Group<'a>>
 }
 
-fn filter_dir_map(dir_map: &Vec<DirMap>) -> Vec<&DirMap> {
-    dir_map
-        .iter().filter(|dir| {
-            let length = dir.dirname
-                .split("/")
-                .collect::<Vec<&str>>()
-                .len();
-            length < 5
-        })
-        .collect::<Vec<&DirMap>>()
+fn print_dir_map(dir_map: Vec<DirMap>, sort: bool) {
+    let mut grouped = group_dir_map(&dir_map);
+    if sort {
+        grouped.sort_by(|a, b| b.dir_map.size.cmp(&a.dir_map.size))
+    }
+    println!("\nSIZE\tCHILDREN\tDIRECTORY");
+    for grp in grouped {
+        println!(
+            "{}\t({})\t{}",
+            grp.dir_map.size.add_commas(),
+            grp.children.len(),
+            grp.dir_map.dirname
+        );
+    }
+    println!("");
+}
+
+fn group_dir_map(dir_map: &Vec<DirMap>) -> Vec<Group> {
+    let mut groupes: Vec<Group> = Vec::new();
+    for dir in dir_map.iter() {
+        let mut new_groupe = true;
+        for grp in groupes.iter_mut() {
+            if grp.dir_map.dirname.contains(&dir.dirname) {
+                grp.children.push(Group {
+                    dir_map: dir,
+                    children: Vec::new()
+                });
+                new_groupe = false;
+            }
+        }
+        if new_groupe {
+            groupes.push(Group {
+                dir_map: dir,
+                children: Vec::new()
+            })
+        }
+    };
+    groupes
 }
