@@ -2,6 +2,7 @@ use clap::Parser;
 use std::fs::{metadata, read_dir};
 use std::path::Path;
 use std::time::{Instant, Duration};
+use indicatif::{ProgressStyle, ProgressBar, MultiProgress};
 
 /// Size of directory optic
 #[derive(Parser, Debug)]
@@ -70,11 +71,16 @@ struct DirMap {
 fn main() {
     let args = Args::parse();
     let path = Path::new(&args.dir);
+    let progress_style = ProgressStyle::with_template(
+        "{prefix:.bold.dim} {spinner}   {wide_msg}"
+    ).unwrap()
+        .tick_chars("⠁⠁⠂⠂⠄⠄⡀⡀⢀⢀⠠⠠⠐⠐⠈⠈");
+    let progress_steam = MultiProgress::new();
     let now = Instant::now();
     
     let mut dir_map: Vec<DirMap> = Vec::new();
     let mut count = 0u64;
-    let size = dir_size(path, &mut count, &mut dir_map);
+    let size = dir_size(path, &mut count, &mut dir_map, &progress_steam,  &progress_style);
     let time = now.elapsed();
 
     // this is for print design dont touch it. thanks :)
@@ -92,7 +98,13 @@ fn main() {
     );
 }
 
-fn dir_size(path: &Path, count: &mut u64, dir_map: &mut Vec<DirMap>) -> u64 {
+fn dir_size(
+    path: &Path,
+    count: &mut u64,
+    dir_map: &mut Vec<DirMap>,
+    progress_stream: &MultiProgress,
+    progress_style: &ProgressStyle
+) -> u64 {
     if !path.exists() { return 0 }
     if path.is_file() {
         *count += 1;
@@ -101,11 +113,27 @@ fn dir_size(path: &Path, count: &mut u64, dir_map: &mut Vec<DirMap>) -> u64 {
             .len();
     }
     if path.is_dir() {
+        let pb = progress_stream.add(ProgressBar::new_spinner());
+        pb.set_style(progress_style.clone());
+        pb.set_prefix(format!("[{}]", count));
         let mut size = 0;
         for child in read_dir(path).unwrap() {
             let child = child.unwrap();
             let child_path = child.path();
-            size += dir_size(&child_path, count, dir_map);
+            pb.set_message(
+                child_path.to_owned()
+                    .into_os_string()
+                    .into_string()
+                    .unwrap()
+            );
+            pb.inc(1);
+            size += dir_size(
+                &child_path,
+                count,
+                dir_map,
+                progress_stream,
+                progress_style
+            );
         }
         dir_map.push(DirMap {
             dirname: path.to_str().unwrap().to_owned(),
