@@ -9,7 +9,7 @@ use indicatif::{ProgressStyle, ProgressBar, MultiProgress};
 #[clap(
     author = "Arian Mirahmadi (thearian@github) (mirarianmir@gmail.com)",
     version = "0.0.1",
-    about = "Maps the size of all the child directories",
+    about = "Prints the size of the given directory, featuring the heaviest dirs",
     long_about = None
 )]
 struct Args {

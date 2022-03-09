@@ -1,5 +1,5 @@
 # Volu: directories usages
-Prints the size of the given directory, featuring the hea
+Prints the size of the given directory, featuring the heaviest dirs
 
 ## Features:
 - Light-weight
