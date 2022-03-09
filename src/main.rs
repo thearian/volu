@@ -3,7 +3,6 @@ use std::fs::{metadata, read_dir};
 use std::path::Path;
 use std::time::{Instant, Duration};
 use indicatif::{ProgressStyle, ProgressBar, MultiProgress};
-use std::thread;
 
 /// Size of directory optic
 #[derive(Parser, Debug)]
@@ -35,10 +34,11 @@ struct Args {
     all: bool
 }
 
-trait Commas {
+trait ByteSize {
     fn add_commas(&self) -> String;
+    fn byte_format(&self) -> String;
 }
-impl Commas for u64 {
+impl ByteSize for u64 {
     fn add_commas(&self) -> String {
         let mut s = self.to_string();
         if s.len() < 2 { return s }
@@ -47,6 +47,21 @@ impl Commas for u64 {
             s.insert(i, ',');
         }
         return s;
+    }
+    fn byte_format(&self) -> String {
+        let u64_comma = self.add_commas();
+        let commas = u64_comma
+            .split(',')
+            .collect::<Vec<&str>>();
+        let suffix = match commas.len() {
+            1 => "bytes",
+            2 => "KB",
+            3 => "MB",
+            4 => "G",
+            5 => "T",
+            _ => ""
+        };
+        format!("{} {}", commas[0], suffix)
     }
 }
 
@@ -93,9 +108,10 @@ fn main() {
     }
 
     println!(
-        "\t{} files indexed at {}\n\t{} bytes",
+        "\t{} files indexed at {}\n\t{} ({} bytes)",
         count,
         time.to_hms(),
+        size.byte_format(),
         size.add_commas()
     );
 }
@@ -118,7 +134,7 @@ fn dir_size(
     if path.is_dir() {
         let pb = progress_stream.add(ProgressBar::new_spinner());
         pb.set_style(progress_style.clone());
-        pb.set_prefix(format!("[{}]", size.add_commas()));
+        pb.set_prefix(format!("[{}]", size.byte_format()));
         for child in read_dir(path).unwrap() {
             let child = child.unwrap();
             let child_path = child.path();
