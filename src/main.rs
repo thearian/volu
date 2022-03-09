@@ -16,13 +16,17 @@ struct Args {
     #[clap(default_value = ".")]
     dir: String,
 
-    /// Print the main directories
+    /// Print the parent directories
     #[clap(short,long)]
     print: bool,
 
-    /// Sort the main directories
+    /// Sort the parent directories [needs --print]
     #[clap(short,long)]
-    sort: bool
+    sort: bool,
+
+    /// Limit the parent directories [needs --print and --sort]
+    #[clap(short,long,default_value = "0")]
+    limit: u8 
 }
 
 trait Commas {
@@ -69,8 +73,11 @@ fn main() {
     let size = dir_size(path, &mut count, &mut dir_map);
     let time = now.elapsed();
 
+    // this is for print design dont touch it. thanks :)
+    println!("");
+
     if args.print {
-        print_dir_map(dir_map, args.sort);
+        print_dir_map(dir_map, args.sort, args.limit);
     }
 
     println!(
@@ -110,13 +117,14 @@ struct Group<'a> {
     children: Vec<Group<'a>>
 }
 
-fn print_dir_map(dir_map: Vec<DirMap>, sort: bool) {
+fn print_dir_map(dir_map: Vec<DirMap>, sort: bool, limit: u8) {
     let mut grouped = group_dir_map(&dir_map);
     if sort {
         grouped.sort_by(|a, b| b.dir_map.size.cmp(&a.dir_map.size))
     }
-    println!("\nSIZE\tCHILDREN\tDIRECTORY");
-    for grp in grouped {
+    println!("SIZE\tCHILDREN\tDIRECTORY");
+    for (index, grp) in grouped.iter().enumerate() {
+        if limit != 0 && index as u8 > limit { break }
         println!(
             "{}\t({})\t{}",
             grp.dir_map.size.add_commas(),
