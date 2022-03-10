@@ -16,22 +16,21 @@ struct Args {
     /// The parent directory
     #[clap(default_value = ".")]
     dir: String,
-
     /// Print the parent directories
     #[clap(short,long)]
     print: bool,
-
     /// Sort the parent directories
     #[clap(short,long)]
     sort: bool,
-
     /// Sort and limit the parent directories
     #[clap(short,long,default_value = "25")]
     limit: u8,
-
     /// Print all the parent directories, no limit
     #[clap(short,long)]
-    all: bool
+    all: bool,
+    /// Print child of parent directories
+    #[clap(short,long)]
+    map: bool,
 }
 
 trait ByteSize {
@@ -104,7 +103,7 @@ fn main() {
     println!("");
 
     if args.print || args.sort || args.limit != 25 {
-        print_dir_map(dir_map, size, args.sort, args.limit, args.all);
+        print_dir_map(dir_map, size, &args);
     }
 
     println!(
@@ -166,40 +165,55 @@ struct Group<'a> {
     children: Vec<Group<'a>>
 }
 
-fn print_dir_map(dir_map: Vec<DirMap>, size: u64, sort: bool, limit: u8, all: bool) {
+fn print_dir_map(dir_map: Vec<DirMap>, size: u64, args: &Args) {
     let mut grouped = group_dir_map(&dir_map);
-    if sort {
+    if args.sort {
         grouped.sort_by(|a, b| b.dir_map.size.cmp(&a.dir_map.size))
     }
 
-    let space_count = size.add_commas().len() as u8;
+    let space_count = size.byte_format().len() as u8;
     println!(
-        "SIZE  {}SUBS\tDIRECTORY",
-        count_to_space(if space_count > 4 {space_count - 4} else {0})
+        "SIZE {}SUBS\tDIRECTORY",
+        produce_letter(space_count, 4, ' ')
     );
     for (index, grp) in grouped.iter().enumerate() {
-        if all || index as u8 > limit { break }
-        let parent_dir_size = grp.dir_map.size.add_commas();
+        if args.all || index as u8 > args.limit { break }
+        let parent_dir_size = grp.dir_map.size.byte_format();
         println!(
-            "{}  {}( {} )\t{}",
+            "{} {}({}) {}",
             parent_dir_size,
-            count_to_space(
-                if space_count > parent_dir_size.len() as u8 {space_count - parent_dir_size.len() as u8}
-                else {0}
-            ),
+            produce_letter(space_count, parent_dir_size.len() as u8, ' '),
             grp.children.len(),
             grp.dir_map.dirname
         );
+
+        if args.map {
+            print_dir_children(&grp.children, space_count, 1);
+        }
     }
     println!("");
 }
 
+fn print_dir_children(children: &Vec<Group>, space_count: u8, generation: u8) {
+    for child in children {
+        let child_dir_size = child.dir_map.size.byte_format();
+        println!(
+            "{}  {}{}> {}",
+            child_dir_size,
+            produce_letter(space_count, child_dir_size.len() as u8, ' '),
+            count_to_letter(4 * generation, '-'),
+            child.dir_map.dirname,
+        );
+        print_dir_children(&child.children, space_count, generation + 1);
+    };
+}
+
 fn group_dir_map(dir_map: &Vec<DirMap>) -> Vec<Group> {
     let mut groupes: Vec<Group> = Vec::new();
-    for dir in dir_map.iter() {
+    for dir in dir_map.iter().rev() {
         let mut new_groupe = true;
         for grp in groupes.iter_mut() {
-            if grp.dir_map.dirname.contains(&dir.dirname) {
+            if dir.dirname.contains(&grp.dir_map.dirname) {
                 grp.children.push(Group {
                     dir_map: dir,
                     children: Vec::new()
@@ -217,8 +231,16 @@ fn group_dir_map(dir_map: &Vec<DirMap>) -> Vec<Group> {
     groupes
 }
 
-fn count_to_space(count: u8) -> String {
+fn count_to_letter(count: u8, letter: char) -> String {
     (0..count)
-        .map(|_| ' ')
+        .map(|_| letter)
         .collect::<String>()
+}
+
+fn produce_letter(space_count: u8, occupied: u8, letter: char) -> String {
+    count_to_letter(
+        if space_count > occupied {space_count - occupied}
+        else {0},
+        letter
+    )
 }
