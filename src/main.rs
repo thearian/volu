@@ -56,18 +56,18 @@ fn main() {
     ).unwrap()
         .tick_chars("⠁⠁⠂⠂⠄⠄⡀⡀⢀⢀⠠⠠⠐⠐⠈⠈");
     let progress_steam = MultiProgress::new();
-    let mut parent: Vec<DirMap> = Vec::new();
+    let mut dirs: Vec<DirMap> = Vec::new();
     let mut count = 0u64;
     let mut size = 0u64;
 
     println!("\n\tSize of {}", args.dir);
 
     let start_runtime = Instant::now();
-    dir_size(path,&mut size, &mut count, &mut parent, &progress_steam,  &progress_style);
+    dir_size(path,&mut size, &mut count, &mut dirs, &progress_steam,  &progress_style);
     let runtime = start_runtime.elapsed();
 
     if args.print || args.sort || args.limit != DEFAULT_PRINT_LIMMIT {
-        print_parent(parent, size, &args);
+        print_dirs(dirs, size, &args);
     }
 
     println!(
@@ -83,7 +83,7 @@ fn dir_size(
     path: &Path,
     size: &mut u64,
     count: &mut u64,
-    parent: &mut Vec<DirMap>,
+    dirs: &mut Vec<DirMap>,
     progress_stream: &MultiProgress,
     progress_style: &ProgressStyle
 ) {
@@ -113,12 +113,12 @@ fn dir_size(
                 &child_path,
                 size,
                 count,
-                parent,
+                dirs,
                 progress_stream,
                 progress_style
             );
         }
-        parent.push(DirMap {
+        dirs.push(DirMap {
             dirname: path.to_str().unwrap().to_owned(),
             size: *size
         });
@@ -126,8 +126,8 @@ fn dir_size(
     };
 }
 
-fn print_parent(parent: Vec<DirMap>, size: u64, args: &Args) {
-    let mut grouped = group_dirs(&parent);
+fn print_dirs(dirs: Vec<DirMap>, size: u64, args: &Args) {
+    let mut grouped = group_dirs(&dirs);
     if args.sort {
         grouped.sort_by(|a, b| b.parent.size.cmp(&a.parent.size))
     }
