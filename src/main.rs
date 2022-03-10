@@ -5,7 +5,7 @@ use std::time::Instant;
 use indicatif::{ProgressStyle, ProgressBar, MultiProgress};
 
 mod types;
-use types::{DirMap,Group};
+use types::{DirMap, Group, GroupList};
 
 mod display_u64_as_file_size;
 use display_u64_as_file_size::DisplayFileSize;
@@ -155,7 +155,7 @@ fn print_dirs(dirs: Vec<DirMap>, size: u64, args: &Args) {
     println!("");
 }
 
-fn print_dir_children(children: &Vec<Group>, space_count: u8, generation: u8) {
+fn print_dir_children(children: &GroupList, space_count: u8, generation: u8) {
     for child in children {
         let child_dir_size = child.parent.size.display_as_file_size();
         println!(
@@ -169,8 +169,8 @@ fn print_dir_children(children: &Vec<Group>, space_count: u8, generation: u8) {
     };
 }
 
-fn group_dirs(ungrouped_dirs: &Vec<DirMap>) -> Vec<Group> {
-    let mut groupes: Vec<Group> = Vec::new();
+fn group_dirs(ungrouped_dirs: &Vec<DirMap>) -> GroupList {
+    let mut groupes: GroupList = Vec::new();
     for dir in ungrouped_dirs.iter().rev() {
         let mut new_groupe = true;
         for grp in groupes.iter_mut() {
