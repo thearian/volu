@@ -127,7 +127,7 @@ fn dir_size(
 }
 
 fn print_parent(parent: Vec<DirMap>, size: u64, args: &Args) {
-    let mut grouped = group_parent(&parent);
+    let mut grouped = group_dirs(&parent);
     if args.sort {
         grouped.sort_by(|a, b| b.parent.size.cmp(&a.parent.size))
     }
@@ -169,7 +169,7 @@ fn print_dir_children(children: &Vec<Group>, space_count: u8, generation: u8) {
     };
 }
 
-fn group_parent(ungrouped_dirs: &Vec<DirMap>) -> Vec<Group> {
+fn group_dirs(ungrouped_dirs: &Vec<DirMap>) -> Vec<Group> {
     let mut groupes: Vec<Group> = Vec::new();
     for dir in ungrouped_dirs.iter().rev() {
         let mut new_groupe = true;
