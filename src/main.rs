@@ -4,6 +4,9 @@ use std::path::Path;
 use std::time::Instant;
 use indicatif::{ProgressStyle, ProgressBar, MultiProgress};
 
+mod types;
+use types::{DirMap,Group};
+
 mod display_u64_as_file_size;
 use display_u64_as_file_size::DisplayFileSize;
 
@@ -39,11 +42,6 @@ struct Args {
     map: bool,
 }
 
-struct DirMap {
-    dirname: String,
-    size: u64
-}
-
 fn main() {
     let args = Args::parse();
     let path = Path::new(&args.dir);
@@ -54,17 +52,17 @@ fn main() {
     let progress_steam = MultiProgress::new();
     let now = Instant::now();
     
-    let mut dir_map: Vec<DirMap> = Vec::new();
+    let mut parent: Vec<DirMap> = Vec::new();
     let mut count = 0u64;
     let mut size = 0u64;
-    dir_size(path,&mut size, &mut count, &mut dir_map, &progress_steam,  &progress_style);
+    dir_size(path,&mut size, &mut count, &mut parent, &progress_steam,  &progress_style);
     let time = now.elapsed();
 
     // this is for print design dont touch it. thanks :)
     println!("");
 
     if args.print || args.sort || args.limit != 25 {
-        print_dir_map(dir_map, size, &args);
+        print_parent(parent, size, &args);
     }
 
     println!(
@@ -80,7 +78,7 @@ fn dir_size(
     path: &Path,
     size: &mut u64,
     count: &mut u64,
-    dir_map: &mut Vec<DirMap>,
+    parent: &mut Vec<DirMap>,
     progress_stream: &MultiProgress,
     progress_style: &ProgressStyle
 ) {
@@ -109,27 +107,22 @@ fn dir_size(
                 &child_path,
                 size,
                 count,
-                dir_map,
+                parent,
                 progress_stream,
                 progress_style
             );
         }
-        dir_map.push(DirMap {
+        parent.push(DirMap {
             dirname: path.to_str().unwrap().to_owned(),
             size: *size
         });
     };
 }
 
-struct Group<'a> {
-    dir_map: &'a DirMap,
-    children: Vec<Group<'a>>
-}
-
-fn print_dir_map(dir_map: Vec<DirMap>, size: u64, args: &Args) {
-    let mut grouped = group_dir_map(&dir_map);
+fn print_parent(parent: Vec<DirMap>, size: u64, args: &Args) {
+    let mut grouped = group_parent(&parent);
     if args.sort {
-        grouped.sort_by(|a, b| b.dir_map.size.cmp(&a.dir_map.size))
+        grouped.sort_by(|a, b| b.parent.size.cmp(&a.parent.size))
     }
 
     let space_count = size.display_as_file_size().len() as u8;
@@ -139,13 +132,13 @@ fn print_dir_map(dir_map: Vec<DirMap>, size: u64, args: &Args) {
     );
     for (index, grp) in grouped.iter().enumerate() {
         if args.all || index as u8 > args.limit { break }
-        let parent_dir_size = grp.dir_map.size.display_as_file_size();
+        let parent_dir_size = grp.parent.size.display_as_file_size();
         println!(
             "{} {}({}) {}",
             parent_dir_size,
             produce_letter(space_count, parent_dir_size.len() as u8, ' '),
             grp.children.len(),
-            grp.dir_map.dirname
+            grp.parent.dirname
         );
 
         if args.map {
@@ -157,26 +150,26 @@ fn print_dir_map(dir_map: Vec<DirMap>, size: u64, args: &Args) {
 
 fn print_dir_children(children: &Vec<Group>, space_count: u8, generation: u8) {
     for child in children {
-        let child_dir_size = child.dir_map.size.display_as_file_size();
+        let child_dir_size = child.parent.size.display_as_file_size();
         println!(
             "{}  {}{}> {}",
             child_dir_size,
             produce_letter(space_count, child_dir_size.len() as u8, ' '),
             count_to_letter(4 * generation, '-'),
-            child.dir_map.dirname,
+            child.parent.dirname,
         );
         print_dir_children(&child.children, space_count, generation + 1);
     };
 }
 
-fn group_dir_map(dir_map: &Vec<DirMap>) -> Vec<Group> {
+fn group_parent(ungrouped_dirs: &Vec<DirMap>) -> Vec<Group> {
     let mut groupes: Vec<Group> = Vec::new();
-    for dir in dir_map.iter().rev() {
+    for dir in ungrouped_dirs.iter().rev() {
         let mut new_groupe = true;
         for grp in groupes.iter_mut() {
-            if dir.dirname.contains(&grp.dir_map.dirname) {
+            if dir.dirname.contains(&grp.parent.dirname) {
                 grp.children.push(Group {
-                    dir_map: dir,
+                    parent: dir,
                     children: Vec::new()
                 });
                 new_groupe = false;
@@ -184,7 +177,7 @@ fn group_dir_map(dir_map: &Vec<DirMap>) -> Vec<Group> {
         }
         if new_groupe {
             groupes.push(Group {
-                dir_map: dir,
+                parent: dir,
                 children: Vec::new()
             })
         }
