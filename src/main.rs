@@ -60,7 +60,12 @@ impl ByteSize for u64 {
             5 => "T",
             _ => ""
         };
-        format!("{} {}", commas[0], suffix)
+        if commas.len() > 1 {
+            return format!("{}.{} {}", commas[0], commas[1], suffix);
+        }
+        else {
+            return format!("{} {}", commas[0], suffix);
+        }
     }
 }
 
