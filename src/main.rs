@@ -13,6 +13,9 @@ use display_u64_as_file_size::DisplayFileSize;
 mod display_duration_as_hms;
 use display_duration_as_hms::Hms;
 
+mod display_letters_by_u8;
+use display_letters_by_u8::{count_to_letter, produce_letter};
+
 /// Size of directory optic
 #[derive(Parser, Debug)]
 #[clap(
@@ -183,18 +186,4 @@ fn group_parent(ungrouped_dirs: &Vec<DirMap>) -> Vec<Group> {
         }
     };
     groupes
-}
-
-fn count_to_letter(count: u8, letter: char) -> String {
-    (0..count)
-        .map(|_| letter)
-        .collect::<String>()
-}
-
-fn produce_letter(space_count: u8, occupied: u8, letter: char) -> String {
-    count_to_letter(
-        if space_count > occupied {space_count - occupied}
-        else {0},
-        letter
-    )
 }
