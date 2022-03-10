@@ -4,6 +4,9 @@ use std::path::Path;
 use std::time::{Instant, Duration};
 use indicatif::{ProgressStyle, ProgressBar, MultiProgress};
 
+mod display_u64_as_file_size;
+use display_u64_as_file_size::DisplayFileSize;
+
 /// Size of directory optic
 #[derive(Parser, Debug)]
 #[clap(
@@ -31,42 +34,6 @@ struct Args {
     /// Print child of parent directories
     #[clap(short,long)]
     map: bool,
-}
-
-trait ByteSize {
-    fn add_commas(&self) -> String;
-    fn byte_format(&self) -> String;
-}
-impl ByteSize for u64 {
-    fn add_commas(&self) -> String {
-        let mut s = self.to_string();
-        if s.len() < 2 { return s }
-        let range = (1..s.len()-2).rev();
-        for i in range.step_by(3) {
-            s.insert(i, ',');
-        }
-        return s;
-    }
-    fn byte_format(&self) -> String {
-        let u64_comma = self.add_commas();
-        let commas = u64_comma
-            .split(',')
-            .collect::<Vec<&str>>();
-        let suffix = match commas.len() {
-            1 => "bytes",
-            2 => "KB",
-            3 => "MB",
-            4 => "G",
-            5 => "T",
-            _ => ""
-        };
-        if commas.len() > 1 {
-            return format!("{}.{} {}", commas[0], commas[1], suffix);
-        }
-        else {
-            return format!("{} {}", commas[0], suffix);
-        }
-    }
 }
 
 trait Hms {
@@ -115,7 +82,7 @@ fn main() {
         "\t{} files indexed at {}\n\t{} ({} bytes)",
         count,
         time.to_hms(),
-        size.byte_format(),
+        size.display_as_file_size(),
         size.add_commas()
     );
 }
@@ -138,7 +105,7 @@ fn dir_size(
     if path.is_dir() {
         let pb = progress_stream.add(ProgressBar::new_spinner());
         pb.set_style(progress_style.clone());
-        pb.set_prefix(format!("[{}]", size.byte_format()));
+        pb.set_prefix(format!("[{}]", size.display_as_file_size()));
         for child in read_dir(path).unwrap() {
             let child = child.unwrap();
             let child_path = child.path();
@@ -176,14 +143,14 @@ fn print_dir_map(dir_map: Vec<DirMap>, size: u64, args: &Args) {
         grouped.sort_by(|a, b| b.dir_map.size.cmp(&a.dir_map.size))
     }
 
-    let space_count = size.byte_format().len() as u8;
+    let space_count = size.display_as_file_size().len() as u8;
     println!(
         "SIZE {}SUBS\tDIRECTORY",
         produce_letter(space_count, 4, ' ')
     );
     for (index, grp) in grouped.iter().enumerate() {
         if args.all || index as u8 > args.limit { break }
-        let parent_dir_size = grp.dir_map.size.byte_format();
+        let parent_dir_size = grp.dir_map.size.display_as_file_size();
         println!(
             "{} {}({}) {}",
             parent_dir_size,
@@ -201,7 +168,7 @@ fn print_dir_map(dir_map: Vec<DirMap>, size: u64, args: &Args) {
 
 fn print_dir_children(children: &Vec<Group>, space_count: u8, generation: u8) {
     for child in children {
-        let child_dir_size = child.dir_map.size.byte_format();
+        let child_dir_size = child.dir_map.size.display_as_file_size();
         println!(
             "{}  {}{}> {}",
             child_dir_size,
