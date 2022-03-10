@@ -1,11 +1,14 @@
 use clap::Parser;
 use std::fs::{metadata, read_dir};
 use std::path::Path;
-use std::time::{Instant, Duration};
+use std::time::Instant;
 use indicatif::{ProgressStyle, ProgressBar, MultiProgress};
 
 mod display_u64_as_file_size;
 use display_u64_as_file_size::DisplayFileSize;
+
+mod display_duration_as_hms;
+use display_duration_as_hms::Hms;
 
 /// Size of directory optic
 #[derive(Parser, Debug)]
@@ -34,20 +37,6 @@ struct Args {
     /// Print child of parent directories
     #[clap(short,long)]
     map: bool,
-}
-
-trait Hms {
-    fn to_hms(&self) -> String;
-}
-impl Hms for Duration {
-    fn to_hms(&self) -> String {
-        let millis: u32 = self.as_millis() as u32;
-        if millis < 1000 { return format!("{}ms", millis) }
-        let seconds: u32 = millis / 1_000;
-        let secs: u32 = seconds % 60;
-        let mins: u32 = seconds / 60;
-        format!("{}:{}s {}ms", mins, secs, millis % 1000)
-    }
 }
 
 struct DirMap {
