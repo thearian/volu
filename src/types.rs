@@ -3,9 +3,9 @@ pub struct DirMap {
     pub size: u64
 }
 
-pub struct Group<'a> {
-    pub parent: &'a DirMap,
-    pub children: GroupList<'a>
+pub struct Group {
+    pub parent: DirMap,
+    pub children: GroupList
 }
 
-pub type GroupList<'a> = Vec<Group<'a>>;
+pub type GroupList = Vec<Group>;

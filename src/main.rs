@@ -56,7 +56,7 @@ fn main() {
     ).unwrap()
         .tick_chars("⠁⠁⠂⠂⠄⠄⡀⡀⢀⢀⠠⠠⠐⠐⠈⠈");
     let progress_steam = MultiProgress::new();
-    let mut dirs: Vec<DirMap> = Vec::new();
+    let mut dirs: GroupList = Vec::new();
     let mut count = 0u64;
     let mut size = 0u64;
 
@@ -67,7 +67,7 @@ fn main() {
     let runtime = start_runtime.elapsed();
 
     if args.print || args.sort || args.limit != DEFAULT_PRINT_LIMMIT {
-        print_dirs(dirs, size, &args);
+        print_dirs(&mut dirs, size, &args);
     }
 
     println!(
@@ -83,7 +83,7 @@ fn dir_size(
     path: &Path,
     size: &mut u64,
     count: &mut u64,
-    dirs: &mut Vec<DirMap>,
+    dirs: &mut GroupList,
     progress_stream: &MultiProgress,
     progress_style: &ProgressStyle
 ) {
@@ -99,6 +99,8 @@ fn dir_size(
         let pb = progress_stream.add(ProgressBar::new_spinner());
         pb.set_style(progress_style.clone());
         pb.set_prefix(format!("[{}]", size.display_as_file_size()));
+        let mut children = Vec::new();
+
         for child in read_dir(path).unwrap() {
             let child = child.unwrap();
             let child_path = child.path();
@@ -113,23 +115,25 @@ fn dir_size(
                 &child_path,
                 size,
                 count,
-                dirs,
+                &mut children,
                 progress_stream,
                 progress_style
             );
         }
-        dirs.push(DirMap {
-            dirname: path.to_str().unwrap().to_owned(),
-            size: *size
+        dirs.push(Group {
+            parent: DirMap {
+                dirname: path.to_str().unwrap().to_owned(),
+                size: *size
+            },
+            children: children
         });
         return
     };
 }
 
-fn print_dirs(dirs: Vec<DirMap>, size: u64, args: &Args) {
-    let mut grouped = group_dirs(&dirs);
+fn print_dirs(dirs: &mut GroupList, size: u64, args: &Args) {
     if args.sort {
-        grouped.sort_by(|a, b| b.parent.size.cmp(&a.parent.size))
+        dirs.sort_by(|a, b| b.parent.size.cmp(&a.parent.size))
     }
 
     let space_count = size.display_as_file_size().len() as u8;
@@ -137,7 +141,7 @@ fn print_dirs(dirs: Vec<DirMap>, size: u64, args: &Args) {
         "SIZE {}SUBS\tDIRECTORY",
         produce_letter(space_count, 4, ' ')
     );
-    for (index, grp) in grouped.iter().enumerate() {
+    for (index, grp) in dirs.iter().enumerate() {
         if args.all || index as u8 > args.limit { break }
         let parent_dir_size = grp.parent.size.display_as_file_size();
         println!(
@@ -162,32 +166,9 @@ fn print_dir_children(children: &GroupList, space_count: u8, generation: u8) {
             "{}  {}{}> {}",
             child_dir_size,
             produce_letter(space_count, child_dir_size.len() as u8, ' '),
-            count_to_letter(4 * generation, '-'),
+            count_to_letter(generation, '-'),
             child.parent.dirname,
         );
         print_dir_children(&child.children, space_count, generation + 1);
     };
-}
-
-fn group_dirs(ungrouped_dirs: &Vec<DirMap>) -> GroupList {
-    let mut groupes: GroupList = Vec::new();
-    for dir in ungrouped_dirs.iter().rev() {
-        let mut new_groupe = true;
-        for grp in groupes.iter_mut() {
-            if dir.dirname.contains(&grp.parent.dirname) {
-                grp.children.push(Group {
-                    parent: dir,
-                    children: Vec::new()
-                });
-                new_groupe = false;
-            }
-        }
-        if new_groupe {
-            groupes.push(Group {
-                parent: dir,
-                children: Vec::new()
-            })
-        }
-    };
-    groupes
 }
