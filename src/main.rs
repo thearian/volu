@@ -16,6 +16,9 @@ use display_duration_as_hms::Hms;
 mod display_letters_by_u8;
 use display_letters_by_u8::{count_to_letter, produce_letter};
 
+static DEFAULT_PRINT_LIMMIT: u8 = 25;
+static DEFAULT_PRINT_LIMMIT_STR: &str = "25";
+
 /// Size of directory optic
 #[derive(Parser, Debug)]
 #[clap(
@@ -35,7 +38,7 @@ struct Args {
     #[clap(short,long)]
     sort: bool,
     /// Sort and limit the parent directories
-    #[clap(short,long,default_value = "25")]
+    #[clap(short,long,default_value = DEFAULT_PRINT_LIMMIT_STR)]
     limit: u8,
     /// Print all the parent directories, no limit
     #[clap(short,long)]
@@ -53,25 +56,24 @@ fn main() {
     ).unwrap()
         .tick_chars("⠁⠁⠂⠂⠄⠄⡀⡀⢀⢀⠠⠠⠐⠐⠈⠈");
     let progress_steam = MultiProgress::new();
-    let now = Instant::now();
-    
     let mut parent: Vec<DirMap> = Vec::new();
     let mut count = 0u64;
     let mut size = 0u64;
+
+    println!("\n\tSize of {}", args.dir);
+
+    let start_runtime = Instant::now();
     dir_size(path,&mut size, &mut count, &mut parent, &progress_steam,  &progress_style);
-    let time = now.elapsed();
+    let runtime = start_runtime.elapsed();
 
-    // this is for print design dont touch it. thanks :)
-    println!("");
-
-    if args.print || args.sort || args.limit != 25 {
+    if args.print || args.sort || args.limit != DEFAULT_PRINT_LIMMIT {
         print_parent(parent, size, &args);
     }
 
     println!(
         "\t{} files indexed at {}\n\t{} ({} bytes)",
         count,
-        time.to_hms(),
+        runtime.to_hms(),
         size.display_as_file_size(),
         size.add_commas()
     );
@@ -91,6 +93,7 @@ fn dir_size(
         *size += metadata(path)
             .unwrap()
             .len();
+        return
     }
     if path.is_dir() {
         let pb = progress_stream.add(ProgressBar::new_spinner());
@@ -119,6 +122,7 @@ fn dir_size(
             dirname: path.to_str().unwrap().to_owned(),
             size: *size
         });
+        return
     };
 }
 
