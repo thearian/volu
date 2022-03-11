@@ -1,6 +1,6 @@
 [package]
 name = "volu"
-version = "0.0.1"
+version = "0.1.0"
 authors = ["Arian Mirahmadi <mirarianmir@gmail.com>"]
 edition = "2021"
 
