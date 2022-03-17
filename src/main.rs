@@ -132,8 +132,12 @@ fn dir_size(
 }
 
 fn print_dirs(dirs: &mut GroupList, size: u64, args: &Args) {
-    if args.sort {
+    if args.sort || args.map {
         dirs.sort_by(|a, b| b.parent.size.cmp(&a.parent.size))
+    }
+    if args.all {
+        println!("");
+        return
     }
 
     let space_count = size.display_as_file_size().len() as u8;
@@ -141,34 +145,42 @@ fn print_dirs(dirs: &mut GroupList, size: u64, args: &Args) {
         "SIZE {}SUBS\tDIRECTORY",
         produce_letter(space_count, 4, ' ')
     );
-    for (index, grp) in dirs.iter().enumerate() {
-        if args.all || index as u8 > args.limit { break }
-        let parent_dir_size = grp.parent.size.display_as_file_size();
-        println!(
-            "{} {}({}) {}",
-            parent_dir_size,
-            produce_letter(space_count, parent_dir_size.len() as u8, ' '),
-            grp.children.len(),
-            grp.parent.dirname
-        );
-
-        if args.map {
-            print_dir_children(&grp.children, space_count, 1);
-        }
+    let mut index = 0;
+    for group in dirs.iter() {
+        if index >= args.limit { break }
+        index += 1;
+        print_dir_children(group, space_count, 1, &mut index, args);
     }
     println!("");
 }
 
-fn print_dir_children(children: &GroupList, space_count: u8, generation: u8) {
+fn print_dir_children(
+    group: &Group,
+    space_count: u8,
+    generation: u8,
+    index: &mut u8,
+    args: &Args
+) {
+    let mut children = group.children.clone();
+
+    if args.sort || args.map {
+        children.sort_by(|a, b| b.parent.size.cmp(&a.parent.size))
+    }
+
     for child in children {
+        if *index >= args.limit { break }
         let child_dir_size = child.parent.size.display_as_file_size();
+        *index += 1;
         println!(
-            "{}  {}{}> {}",
+            "{}  {}({}){}> {}",
             child_dir_size,
             produce_letter(space_count, child_dir_size.len() as u8, ' '),
+            child.children.len(),
             count_to_letter(generation, '-'),
             child.parent.dirname,
         );
-        print_dir_children(&child.children, space_count, generation + 1);
+        if args.map {
+            print_dir_children(&child, space_count, generation + 1, index, args);
+        }
     };
 }
