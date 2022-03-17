@@ -12,7 +12,7 @@ impl Hms for Duration {
         }
 
         let millis = milli_seconds % 1000;
-        let seconds: u32 = millis / 1_000;
+        let seconds: u32 = milli_seconds / 1_000;
         if seconds < 60 {
             return format!("{}.{}s", seconds, millis)
         }

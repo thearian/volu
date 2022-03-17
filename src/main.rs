@@ -131,6 +131,10 @@ fn dir_size(
     };
 }
 
+// TODO: time display second is dead
+// TODO: show unlisted dirs count for --limit and --map
+// TODO: highlight the heaviest
+
 fn print_dirs(dirs: &mut GroupList, args: &Args) {
     if args.sort || args.map {
         dirs.sort_by(|a, b| b.parent.size.cmp(&a.parent.size))
@@ -140,7 +144,7 @@ fn print_dirs(dirs: &mut GroupList, args: &Args) {
         return
     }
 
-    let space_count = 7u8;
+    let space_count = 9u8;
     println!(
         "SIZE {}SUBS\tDIRECTORY",
         produce_letter(space_count, 4, ' ')
@@ -172,7 +176,7 @@ fn print_dir_children(
         let child_dir_size = child.parent.size.display_as_file_size();
         *index += 1;
         println!(
-            "{}  {}{}|{}> {}",
+            "{} {}{}|{}> {}",
             child_dir_size,
             produce_letter(space_count, child_dir_size.len() as u8, ' '),
             child.children.len(),
