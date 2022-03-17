@@ -25,7 +25,7 @@ static DEFAULT_PRINT_LIMMIT_STR: &str = "25";
 #[clap(
     author = "Arian Mirahmadi (thearian@github) (mirarianmir@gmail.com)",
     version = "0.1.0",
-    about = "Prints the size of the given directory, featuring the heaviest dirs",
+    about = "Prints the size of the given directory, featuring the largest dirs",
     long_about = None
 )]
 struct Args {

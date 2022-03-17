@@ -1,9 +1,9 @@
 # Volu: directories usages and file size
-Prints the size of the given directory or file, featuring the heaviest dirs
+Prints the size of the given directory or file, featuring the largest dirs
 and a full map of each dir's sub-directories
 
 ## Features:
-- Sorts and prints the heaviest dirs
+- Sorts and prints the largest dirs
 - Prints a sized-map of sub-dirs
 - Pretty Light-weight
 - Fast as default
@@ -25,7 +25,7 @@ Minimal use: `volu path/to/dir/`
 ```command
 volu 0.1.0
 Arian Mirahmadi (thearian@github) (mirarianmir@gmail.com)
-Prints the size of the given directory, featuring the heaviest dirs
+Prints the size of the given directory, featuring the largest dirs
 
 USAGE:
     volu.exe [OPTIONS] [DIR]
