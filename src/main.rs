@@ -3,6 +3,7 @@ use std::fs::{metadata, read_dir};
 use std::path::Path;
 use std::time::Instant;
 use indicatif::{ProgressStyle, ProgressBar, MultiProgress};
+use console::style;
 
 mod types;
 use types::{DirMap, Group, GroupList};
@@ -67,7 +68,7 @@ fn main() {
     let runtime = start_runtime.elapsed();
 
     if args.print || args.sort || args.limit != DEFAULT_PRINT_LIMMIT {
-        print_dirs(&mut dirs, &args);
+        print_dirs(&mut dirs, &size, &args);
     }
 
     println!(
@@ -100,6 +101,7 @@ fn dir_size(
         pb.set_style(progress_style.clone());
         pb.set_prefix(format!("[{}]", size.display_as_file_size()));
         let mut children = Vec::new();
+        let mut path_size = 0u64;
 
         for child in read_dir(path).unwrap() {
             let child = child.unwrap();
@@ -113,17 +115,18 @@ fn dir_size(
             pb.inc(1);
             dir_size(
                 &child_path,
-                size,
+                &mut path_size,
                 count,
                 &mut children,
                 progress_stream,
                 progress_style
             );
         }
+        *size += path_size;
         dirs.push(Group {
             parent: DirMap {
                 dirname: path.to_str().unwrap().to_owned(),
-                size: *size
+                size: path_size
             },
             children: children
         });
@@ -131,7 +134,7 @@ fn dir_size(
     };
 }
 
-fn print_dirs(dirs: &mut GroupList, args: &Args) {
+fn print_dirs(dirs: &mut GroupList, size: &u64, args: &Args) {
     if args.sort || args.map {
         dirs.sort_by(|a, b| b.parent.size.cmp(&a.parent.size))
     }
@@ -151,7 +154,7 @@ fn print_dirs(dirs: &mut GroupList, args: &Args) {
             break
         }
         index += 1;
-        print_dir_children(group, space_count, 1, &mut index, args);
+        print_dir_children(group, space_count, size, 1, &mut index, args);
     }
     println!("");
 }
@@ -159,6 +162,7 @@ fn print_dirs(dirs: &mut GroupList, args: &Args) {
 fn print_dir_children(
     group: &Group,
     space_count: u8,
+    max_size: &u64,
     generation: u8,
     index: &mut u8,
     args: &Args
@@ -177,13 +181,22 @@ fn print_dir_children(
             );
             break
         }
-        let child_dir_size = child.parent.size.display_as_file_size();
+        let child_dir_size = child.parent.size.to_owned()
+            .display_as_file_size();
         let children_count = child.children.len();
         let children_count_string_len = format!("{}", children_count).len() as u8;
         *index += 1;
+        let styled_size = match 100 * child.parent.size / *max_size {
+            0..=20      => style(child.parent.size.display_as_file_size()),
+            21..=40     => style(child.parent.size.display_as_file_size()).green(),
+            41..=60     => style(child.parent.size.display_as_file_size()).blue(),
+            61..=80     => style(child.parent.size.display_as_file_size()).yellow(),
+            81..=100    => style(child.parent.size.display_as_file_size()).red(),
+            _           => style(child.parent.size.display_as_file_size())
+        };
         println!(
             "{}{}  |{}{}|{}> {}",
-            child_dir_size,
+            styled_size,
             produce_letter(10, child_dir_size.len() as u8 ,' '),
             children_count,
             produce_letter(4, children_count_string_len , ' '),
@@ -191,7 +204,7 @@ fn print_dir_children(
             child.parent.dirname,
         );
         if args.map {
-            print_dir_children(&child, space_count, generation + 1, index, args);
+            print_dir_children(&child, space_count, max_size, generation + 1, index, args);
         }
     };
 }
