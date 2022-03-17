@@ -20,10 +20,10 @@ impl DisplayFileSize for u64 {
             .collect::<Vec<&str>>();
         let suffix = match commas.len() {
             1 => "bytes",
-            2 => "KB",
-            3 => "MB",
-            4 => "G",
-            5 => "T",
+            2 => "Kb",
+            3 => "Mb",
+            4 => "Gb",
+            5 => "Tb",
             _ => ""
         };
         if commas.len() > 1 {

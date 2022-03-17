@@ -67,7 +67,7 @@ fn main() {
     let runtime = start_runtime.elapsed();
 
     if args.print || args.sort || args.limit != DEFAULT_PRINT_LIMMIT {
-        print_dirs(&mut dirs, size, &args);
+        print_dirs(&mut dirs, &args);
     }
 
     println!(
@@ -131,7 +131,7 @@ fn dir_size(
     };
 }
 
-fn print_dirs(dirs: &mut GroupList, size: u64, args: &Args) {
+fn print_dirs(dirs: &mut GroupList, args: &Args) {
     if args.sort || args.map {
         dirs.sort_by(|a, b| b.parent.size.cmp(&a.parent.size))
     }
@@ -140,7 +140,7 @@ fn print_dirs(dirs: &mut GroupList, size: u64, args: &Args) {
         return
     }
 
-    let space_count = size.display_as_file_size().len() as u8;
+    let space_count = 7u8;
     println!(
         "SIZE {}SUBS\tDIRECTORY",
         produce_letter(space_count, 4, ' ')
@@ -172,11 +172,11 @@ fn print_dir_children(
         let child_dir_size = child.parent.size.display_as_file_size();
         *index += 1;
         println!(
-            "{}  {}({}){}> {}",
+            "{}  {}{}|{}> {}",
             child_dir_size,
             produce_letter(space_count, child_dir_size.len() as u8, ' '),
             child.children.len(),
-            count_to_letter(generation, '-'),
+            count_to_letter(2 * generation, '-'),
             child.parent.dirname,
         );
         if args.map {
