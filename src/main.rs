@@ -140,9 +140,9 @@ fn print_dirs(dirs: &mut GroupList, args: &Args) {
         return
     }
 
-    let space_count = 9u8;
+    let space_count = 10u8;
     println!(
-        "SIZE {}SUBS\tDIRECTORY",
+        "SIZE   {}SUBS\tDIRECTORY",
         produce_letter(space_count, 4, ' ')
     );
     let mut index = 0;
@@ -178,12 +178,15 @@ fn print_dir_children(
             break
         }
         let child_dir_size = child.parent.size.display_as_file_size();
+        let children_count = child.children.len();
+        let children_count_string_len = format!("{}", children_count).len() as u8;
         *index += 1;
         println!(
-            "{} {}{}|{}> {}",
+            "{}{}  |{}{}|{}> {}",
             child_dir_size,
-            produce_letter(space_count, child_dir_size.len() as u8, ' '),
-            child.children.len(),
+            produce_letter(10, child_dir_size.len() as u8 ,' '),
+            children_count,
+            produce_letter(4, children_count_string_len , ' '),
             count_to_letter(2 * generation, '-'),
             child.parent.dirname,
         );
