@@ -5,21 +5,21 @@ and a full map of each dir's sub-directories
 ## Features:
 - Sorts and prints the largest dirs
 - Prints a sized-map of sub-dirs
-- Pretty Light-weight
+- Pretty Light-weight (2.2 Mb on windows)
 - Fast as default
 
 ## Usage
-> Some platform's are released on github
-> An option is to clone this repo and run `cargo run` instead of `volu`
+> Some platform's are released on github  
+> An option is to clone this repo and run `cargo run` instead of `volu`  
 
 Current dir's usage: `volu`  
-Usage of a specific dir: `volu path/to/dir/`
-Print a list of all *parent dirs*: `volu -p`
-Print a sorted parent dirs list: `volu -s`
-Limit the number of printed parent dirs list: `volu -l 10`
-Print a sized map of all dirs and their children: `volu -m`
+Usage of a specific dir: `volu path/to/dir/`  
+Print a list of all *parent dirs*: `volu -p`  
+Print a sorted parent dirs list: `volu -s`  
+Limit the number of printed parent dirs list: `volu -l 10`  
+Print a sized map of all dirs and their children: `volu -m`  
 
-Best use: `volu --map path/to/dir/`
+Best use: `volu -sm path/to/dir/`
 Minimal use: `volu path/to/dir/`
 
 ```command
@@ -28,7 +28,7 @@ Arian Mirahmadi (thearian@github) (mirarianmir@gmail.com)
 Prints the size of the given directory, featuring the largest dirs
 
 USAGE:
-    volu.exe [OPTIONS] [DIR]
+    volu[.exe] [OPTIONS] [DIR]
 
 ARGS:
     <DIR>    The parent directory [default: .]
