@@ -1,6 +1,6 @@
 [package]
 name = "volu"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Arian Mirahmadi <mirarianmir@gmail.com>"]
 edition = "2021"
 description = "Prints the size of the given directory, featuring the largest dirs"
