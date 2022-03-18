@@ -9,6 +9,7 @@ categories = ["command-line-interface"]
 license = "MIT"
 repository = "https://github.com/thearian/volu"
 readme = "README.md"
+exclude = ["screenshots/*"]
 
 [profile.release]
 opt-level = "z"
