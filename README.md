@@ -1,13 +1,15 @@
 # Volu: directories usages and file size
+
 [![crates.io](https://img.shields.io/crates/v/volu.svg)](https://crates.io/crates/volu)
 [![crates.io](https://img.shields.io/crates/d/volu.svg)](https://crates.io/crates/volu)
 
 Prints the size of the given directory or file, featuring the largest dirs
 and a full map of each dir's child-directories
 
-<img src="https://github.com/thearian/volu/blob/master/screenshots/volu-sm.png" width="598" height="543">
+<img src="./screenshots/volu-sm.png" width="598" height="543">
 
 ## Features:
+
 - Pretty Light-weight (8Kb of source code and 2.2Mb of binaries)
 - Usage of the directory
 - Print the usage of the child-directories
@@ -16,11 +18,13 @@ and a full map of each dir's child-directories
 - Highlight the largest directory in each directory
 
 ## Install
+
 Using Cargo: `cargo install volu`
 
 Using Github: download the latest binaries in the github release
 
 ## Usage
+
 Current dir's usage: `volu`  
 Usage of a specific dir: `volu path/to/dir/`  
 Print a list of all *parent dirs*: `volu -p`  
