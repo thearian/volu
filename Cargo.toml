@@ -1,6 +1,6 @@
 [package]
 name = "volu"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Arian Mirahmadi <mirarianmir@gmail.com>"]
 edition = "2021"
 description = "Prints the size of the given directory, featuring the largest dirs"
@@ -9,7 +9,7 @@ categories = ["command-line-interface"]
 license = "MIT"
 repository = "https://github.com/thearian/volu"
 readme = "README.md"
-exclude = ["screenshots/*"]
+exclude = ["bin/*"]
 
 [profile.release]
 opt-level = "z"
