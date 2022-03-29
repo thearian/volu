@@ -17,7 +17,7 @@ use display_duration_as_hms::Hms;
 mod display_letters_by_u8;
 use display_letters_by_u8::{count_to_letter, produce_letter};
 
-static DEFAULT_PRINT_LIMMIT: u8 = 25;
+static DEFAULT_PRINT_LIMMIT: u32 = 25;
 static DEFAULT_PRINT_LIMMIT_STR: &str = "25";
 
 /// Size of directory optic
@@ -40,7 +40,7 @@ struct Args {
     sort: bool,
     /// Sort and limit the parent directories
     #[clap(short,long,default_value = DEFAULT_PRINT_LIMMIT_STR)]
-    limit: u8,
+    limit: u32,
     /// Print all the parent directories, no limit
     #[clap(short,long)]
     all: bool,
@@ -138,19 +138,15 @@ fn print_dirs(dirs: &mut GroupList, size: &u64, args: &Args) {
     if args.sort || args.map {
         dirs.sort_by(|a, b| b.parent.size.cmp(&a.parent.size))
     }
-    if args.all {
-        println!("");
-        return
-    }
 
     let space_count = 10u8;
     println!(
         "SIZE   {}SUBS\tDIRECTORY",
         produce_letter(space_count, 4, ' ')
     );
-    let mut index = 0;
+    let mut index = 0u32;
     for group in dirs.iter() {
-        if index >= args.limit {
+        if !args.all && index >= args.limit {
             break
         }
         index += 1;
@@ -164,7 +160,7 @@ fn print_dir_children(
     space_count: u8,
     max_size: &u64,
     generation: u8,
-    index: &mut u8,
+    index: &mut u32,
     args: &Args
 ) {
     let mut children = group.children.clone();
@@ -174,7 +170,7 @@ fn print_dir_children(
     }
 
     for child in children {
-        if *index >= args.limit {
+        if !args.all && *index >= args.limit {
             println!(
                 "\t{}... other child dirs are included",
                 count_to_letter(2 * generation, ' '),
@@ -203,7 +199,7 @@ fn print_dir_children(
             count_to_letter(2 * generation, '-'),
             child.parent.dirname,
         );
-        if args.map {
+        if args.map && child.children.len() > 0 {
             print_dir_children(&child, space_count, max_size, generation + 1, index, args);
         }
     };
