@@ -38,9 +38,12 @@ struct Args {
     /// Sort the parent directories
     #[clap(short,long)]
     sort: bool,
-    /// Sort and limit the parent directories
+    /// Sort and limit the count of parent directories
     #[clap(short,long,default_value = DEFAULT_PRINT_LIMMIT_STR)]
     limit: u32,
+    /// Print and limit the count of children directories
+    #[clap(long,default_value = "9999")]
+    child_limit: u32,
     /// Print all the parent directories, no limit
     #[clap(short,long)]
     all: bool,
@@ -169,8 +172,9 @@ fn print_dir_children(
         children.sort_by(|a, b| b.parent.size.cmp(&a.parent.size))
     }
 
+    let mut children_index = 0u32;
     for child in children {
-        if !args.all && *index >= args.limit {
+        if !args.all && *index >= args.limit || children_index >= args.child_limit {
             println!(
                 "\t{}... other child dirs are included",
                 count_to_letter(2 * generation, ' '),
@@ -182,6 +186,7 @@ fn print_dir_children(
         let children_count = child.children.len();
         let children_count_string_len = format!("{}", children_count).len() as u8;
         *index += 1;
+        children_index += 1;
         let styled_size = match 100 * child.parent.size / *max_size {
             0..=20      => style(child.parent.size.display_as_file_size()),
             21..=40     => style(child.parent.size.display_as_file_size()).green(),
