@@ -26,7 +26,7 @@ static DEFAULT_PRINT_LIMMIT_STR: &str = "25";
 #[derive(Parser, Debug)]
 #[clap(
     author = "Arian Mirahmadi (thearian@github) (mirarianmir@gmail.com)",
-    version = "0.1.0",
+    version = "0.2.1",
     about = "Prints the size of the given directory, featuring the largest dirs",
     long_about = None
 )]

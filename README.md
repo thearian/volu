@@ -37,22 +37,25 @@ Most complete results: `volu -ma path/to/dir/`
 Most minimal results: `volu path/to/dir/`
 
 ```command
-volu 0.1.1
+volu 0.2.1
 Arian Mirahmadi (thearian@github) (mirarianmir@gmail.com)
 Prints the size of the given directory, featuring the largest dirs
 
 USAGE:
-    volu[.exe] [OPTIONS] [DIR]
+    volu.exe [OPTIONS] [DIR]
 
 ARGS:
     <DIR>    The parent directory [default: .]
 
 OPTIONS:
-    -a, --all              Print all the parent directories, no limit
-    -h, --help             Print help information
-    -l, --limit <LIMIT>    Sort and limit the parent directories [default: 25]
-    -m, --map              Print child of parent directories
-    -p, --print            Print the parent directories
-    -s, --sort             Sort the parent directories
-    -V, --version          Print version information
+    -a, --all                          Print all the parent directories, no limit
+        --child-limit <CHILD_LIMIT>    Print and limit the count of children directories [default:
+                                       9999]
+    -f, --fast                         Doesnt show progress which causes better performance
+    -h, --help                         Print help information
+    -l, --limit <LIMIT>                Sort and limit the count of parent directories [default: 25]
+    -m, --map                          Print child of parent directories
+    -p, --print                        Print the parent directories
+    -s, --sort                         Sort the parent directories
+    -V, --version                      Print version information
 ```
