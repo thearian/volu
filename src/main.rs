@@ -182,11 +182,11 @@ fn print_dir_children(
         *index += 1;
         children_index += 1;
         let styled_size = match 100 * child.parent.size / *max_size {
-            0..=20      => style(child.parent.size.display_as_file_size()),
-            21..=40     => style(child.parent.size.display_as_file_size()).green(),
-            41..=60     => style(child.parent.size.display_as_file_size()).blue(),
-            61..=80     => style(child.parent.size.display_as_file_size()).yellow(),
-            81..=100    => style(child.parent.size.display_as_file_size()).red(),
+            0..=5      => style(child.parent.size.display_as_file_size()),
+            6..=10     => style(child.parent.size.display_as_file_size()).green(),
+            11..=15     => style(child.parent.size.display_as_file_size()).blue(),
+            16..=20     => style(child.parent.size.display_as_file_size()).yellow(),
+            21..=100    => style(child.parent.size.display_as_file_size()).red(),
             _           => style(child.parent.size.display_as_file_size())
         };
         println!(
