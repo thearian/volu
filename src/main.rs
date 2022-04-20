@@ -72,7 +72,7 @@ fn main() {
     dir_size(path,&mut size, &mut count, &mut dirs, &progress);
     let runtime = start_runtime.elapsed();
 
-    if args.print || args.sort || args.limit != DEFAULT_PRINT_LIMMIT {
+    if args.print || args.sort || args.map || args.limit != DEFAULT_PRINT_LIMMIT {
         print_dirs(&mut dirs, &size, &args);
     }
 

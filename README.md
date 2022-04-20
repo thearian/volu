@@ -31,9 +31,10 @@ Print a list of all *parent dirs*: `volu -p`
 Print a sorted parent dirs list: `volu -s`  
 Limit the number of printed parent dirs list: `volu -l 11`  
 Print a sized map of all dirs and their children: `volu -m`  
+Print a limited sized map of dirs and only ten children of itself: `volu -m --child-limit 10`  
 
-Best use: `volu -sm path/to/dir/`
-Minimal use: `volu path/to/dir/`
+Most complete results: `volu -ma path/to/dir/`
+Most minimal results: `volu path/to/dir/`
 
 ```command
 volu 0.1.1
