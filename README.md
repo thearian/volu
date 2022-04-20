@@ -6,7 +6,7 @@
 Prints the size of the given directory or file, featuring the largest dirs
 and a full map of each dir's child-directories
 
-<img src="./screenshots/volu-sm.png" width="598" height="543">
+<img src="./screenshots/volu-m--child-limit.png" width="598" height="543">
 
 ## Features:
 
