@@ -2,11 +2,10 @@ use clap::Parser;
 use std::fs::{metadata, read_dir};
 use std::path::Path;
 use std::time::Instant;
-use indicatif::{ProgressStyle, ProgressBar, MultiProgress};
 use console::style;
 
 mod types;
-use types::{DirMap, Group, GroupList};
+use types::{DirMap, Group, GroupList, ProgressOptional};
 
 mod display_u64_as_file_size;
 use display_u64_as_file_size::DisplayFileSize;
@@ -16,6 +15,9 @@ use display_duration_as_hms::Hms;
 
 mod display_letters_by_u8;
 use display_letters_by_u8::{count_to_letter, produce_letter};
+
+mod progress_bar;
+use progress_bar::{init_progress_bar, new_progress, tick_progress};
 
 static DEFAULT_PRINT_LIMMIT: u32 = 25;
 static DEFAULT_PRINT_LIMMIT_STR: &str = "25";
@@ -50,24 +52,24 @@ struct Args {
     /// Print child of parent directories
     #[clap(short,long)]
     map: bool,
+    /// Doesnt show progress which causes better performance
+    #[clap(short,long)]
+    fast: bool,
 }
 
 fn main() {
     let args = Args::parse();
     let path = Path::new(&args.dir);
-    let progress_style = ProgressStyle::with_template(
-        "{prefix:.bold.dim} {spinner}   {wide_msg}"
-    ).unwrap()
-        .tick_chars("⠁⠁⠂⠂⠄⠄⡀⡀⢀⢀⠠⠠⠐⠐⠈⠈");
-    let progress_steam = MultiProgress::new();
     let mut dirs: GroupList = Vec::new();
     let mut count = 0u64;
     let mut size = 0u64;
 
+    let progress = init_progress_bar(args.fast);
+
     println!("\n\tSize of {}", args.dir);
 
     let start_runtime = Instant::now();
-    dir_size(path,&mut size, &mut count, &mut dirs, &progress_steam,  &progress_style);
+    dir_size(path,&mut size, &mut count, &mut dirs, &progress);
     let runtime = start_runtime.elapsed();
 
     if args.print || args.sort || args.limit != DEFAULT_PRINT_LIMMIT {
@@ -83,13 +85,13 @@ fn main() {
     );
 }
 
+
 fn dir_size(
     path: &Path,
     size: &mut u64,
     count: &mut u64,
     dirs: &mut GroupList,
-    progress_stream: &MultiProgress,
-    progress_style: &ProgressStyle
+    progress: &ProgressOptional
 ) {
     if !path.exists() { return }
     if path.is_file() {
@@ -100,29 +102,21 @@ fn dir_size(
         return
     }
     if path.is_dir() {
-        let pb = progress_stream.add(ProgressBar::new_spinner());
-        pb.set_style(progress_style.clone());
-        pb.set_prefix(format!("[{}]", size.display_as_file_size()));
         let mut children = Vec::new();
         let mut path_size = 0u64;
+
+        let pb = new_progress(progress, &size.display_as_file_size());
 
         for child in read_dir(path).unwrap() {
             let child = child.unwrap();
             let child_path = child.path();
-            pb.set_message(
-                child_path.to_owned()
-                    .into_os_string()
-                    .into_string()
-                    .unwrap()
-            );
-            pb.inc(1);
+            tick_progress(&pb, &child_path);
             dir_size(
                 &child_path,
                 &mut path_size,
                 count,
                 &mut children,
-                progress_stream,
-                progress_style
+                progress
             );
         }
         *size += path_size;

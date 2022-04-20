@@ -1,3 +1,5 @@
+use indicatif::{ProgressStyle, MultiProgress};
+
 #[derive(Clone)]
 pub struct DirMap {
     pub dirname: String,
@@ -11,3 +13,5 @@ pub struct Group {
 }
 
 pub type GroupList = Vec<Group>;
+
+pub type ProgressOptional = Option<(ProgressStyle, MultiProgress)>;
