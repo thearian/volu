@@ -6,16 +6,21 @@
 Prints the size of the given directory or file, featuring the largest dirs
 and a full map of each dir's child-directories
 
-<img src="./screenshots/main.gif" width="598" height="543">
+<img src="./screenshots/main.gif" width="598" height="auto">
 
 ## Features:
 
 - Pretty Light-weight (8Kb of source code and 2.2Mb of binaries)
+
 - Prints the usage of directory and its child-directories 
+
 - Map of the usage of all directories and their children
+
 - Sorts the child-directories by usage
+
 - Highlight the largest directory in each directory
-<img src="./screenshots/main.png" width="598" height="543">
+  
+  <img src="./screenshots/main.png" width="598" height="auto">
 
 ## Install
 
@@ -26,11 +31,13 @@ Using Github: download the latest binaries in the github release
 ## Usage
 
 ### Feature Update: `--fast`
+
 Need faster performance? Is progress pointless to you?
 Use `--fast` flag to tell volu not to waste time on printing the progress
+
 <div style="display: flex; flex-direction: row">
-  <img src="./screenshots/compare-default.gif" width="350" height="350">
-  <img src="./screenshots/compare-fast.gif" width="350" height="350">
+  <img src="./screenshots/compare-default.gif" width="375" height="auto">
+  <img src="./screenshots/compare-fast.gif" width="375" height="auto">
 </div>
 
 Current dir's usage: `volu`  
