@@ -1,11 +1,18 @@
-use std::fs::{
-    Metadata,
-    metadata,
-    read_dir,
+use std::{
+    fs::{
+        Metadata,
+        metadata,
+        read_dir,
+    },
+    path::Path,
+    io,
+    io::{
+        stdin,
+        stdout,
+        Write,
+        Read
+    }
 };
-use std::path::Path;
-use std::io::{stdin,stdout,Write, Read};
-use std::thread::sleep_ms;
 
 mod display_u64_as_file_size;
 use display_u64_as_file_size::DisplayFileSize;
@@ -108,12 +115,16 @@ fn viewer(cache: MemoryCache) {
     loop {
         print_all_children(&cache, &mut index, &mut cursor);
 
+        println!("\n\r(j: down , k: up , q: quit) Hit enter to execute");
+        print!("COMMAND ");
+
+        io::stdout().flush().unwrap();
+
         let direction = wait_for_readstd();
         match direction {
             'k' => { cursor -= 1 },
             'j' => { cursor += 1 },
-            'w' => { cursor -= 1 },
-            's' => { cursor += 1 },
+            'q' => { break; }
             _ => {}
         }
     }
@@ -149,14 +160,6 @@ fn wait_for_readstd() -> char {
         .and_then(|result| result.ok())
         .map(|byte| byte as i32)
         .expect("Not a char");
-
-    // if let Some('\n')=s.chars().next_back() {
-        // s.pop();
-    // }
-    // if let Some('\r')=s.chars().next_back() {
-        // s.pop();
-    // }
-
 
     return std::char::from_u32(ch as u32)
         .expect("Not a valid char")
