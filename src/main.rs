@@ -17,9 +17,6 @@ use std::{
 mod display_u64_as_file_size;
 use display_u64_as_file_size::DisplayFileSize;
 
-mod display_duration_as_hms;
-use display_duration_as_hms::Hms;
-
 mod types;
 use types::{
     MemoryCache,
@@ -87,14 +84,24 @@ fn print_file_metadata(filename: &String, metadata: &Metadata, hover: bool) {
             // .to_hms();
     let status = if hover { ">" } else { " " };
 
-    println!(" {} {}  {}",
-        status,
-        filename,
-        size,
-        // permissions,
-        // created_time,
-        // modified_time
+    print_neatly(
+        &format!("{} {}", 
+            status,
+            filename
+            // permissions,
+            // created_time,
+            // modified_time
+        ),
+        &size
     );
+}
+
+fn print_neatly(tail: &str, body: &str) {
+    let spaces_needed = 50 - tail.len() - body.len();
+    let mut spaces = String::new();
+    for _ in 0..spaces_needed { spaces.push(' ') }
+    
+    println!("{}{}{}", tail, spaces, body);
 }
 
 
