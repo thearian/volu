@@ -68,42 +68,42 @@ fn main() {
 
 
 fn print_file_metadata(filename: &String, metadata: &Metadata, hover: bool) {
-    let permissions = match metadata.permissions().readonly() {
-        true  => " R ",
-        false => "R&W"
-    };
+    // let permissions = match metadata.permissions().readonly() {
+        // true  => " R ",
+        // false => "R&W"
+    // };
     let size = DisplayFileSize::display_as_file_size(
         &metadata.len()
     );
-    let created_time = metadata.created()
-            .unwrap()
-            .elapsed()
-            .unwrap()
-            .to_hms();
-    let modified_time = metadata.modified()
-            .unwrap()
-            .elapsed()
-            .unwrap()
-            .to_hms();
-    let status = if hover { ">" } else { "-" };
+    // let created_time = metadata.created()
+            // .unwrap()
+            // .elapsed()
+            // .unwrap()
+            // .to_hms();
+    // let modified_time = metadata.modified()
+            // .unwrap()
+            // .elapsed()
+            // .unwrap()
+            // .to_hms();
+    let status = if hover { ">" } else { " " };
 
-    println!(" {} {:?}\t{}\t{}\t{}\t{}",
+    println!(" {} {}  {}",
         status,
         filename,
         size,
-        permissions,
-        created_time,
-        modified_time
+        // permissions,
+        // created_time,
+        // modified_time
     );
 }
 
 
 fn print_dir(dir: &String, hover: bool) {
     if hover {
-        println!(" > {:?}", dir);
+        println!(" > {}", dir);
     }
     else {
-        println!(" + {:?}", dir);
+        println!(" + {}", dir);
     }
 }
 
