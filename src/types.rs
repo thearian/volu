@@ -1,17 +1,17 @@
-use indicatif::{ProgressStyle, MultiProgress};
+use std::fs::Metadata;
 
-#[derive(Clone)]
-pub struct DirMap {
-    pub dirname: String,
-    pub size: u64
+pub struct MemoryCache {
+    pub dirs:  Vec<String>,
+    pub files: Vec<FileMetaData>,
 }
 
-#[derive(Clone)]
-pub struct Group {
-    pub parent: DirMap,
-    pub children: GroupList
+pub struct FileMetaData {
+    pub name: String,
+    pub metadata: Metadata
 }
 
-pub type GroupList = Vec<Group>;
-
-pub type ProgressOptional = Option<(ProgressStyle, MultiProgress)>;
+struct DirMetaData {
+    name: String,
+    cache: MemoryCache,
+    size: Option<u64>
+}

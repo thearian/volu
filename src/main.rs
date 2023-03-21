@@ -1,11 +1,11 @@
-use clap::Parser;
-use std::fs::{metadata, read_dir};
+use std::fs::{
+    Metadata,
+    metadata,
+    read_dir,
+};
 use std::path::Path;
-use std::time::Instant;
-use console::style;
-
-mod types;
-use types::{DirMap, Group, GroupList, ProgressOptional};
+use std::io::{stdin,stdout,Write, Read};
+use std::thread::sleep_ms;
 
 mod display_u64_as_file_size;
 use display_u64_as_file_size::DisplayFileSize;
@@ -13,193 +13,152 @@ use display_u64_as_file_size::DisplayFileSize;
 mod display_duration_as_hms;
 use display_duration_as_hms::Hms;
 
-mod display_letters_by_u8;
-use display_letters_by_u8::{count_to_letter, produce_letter};
-
-mod progress_bar;
-use progress_bar::{init_progress_bar, new_progress, tick_progress};
-
-static DEFAULT_PRINT_LIMMIT: u32 = 25;
-static DEFAULT_PRINT_LIMMIT_STR: &str = "25";
-
-/// Size of directory optic
-#[derive(Parser, Debug)]
-#[clap(
-    author = "Arian Mirahmadi (thearian@github) (mirarianmir@gmail.com)",
-    version = "0.2.1",
-    about = "Prints the size of the given directory, featuring the largest dirs",
-    long_about = None
-)]
-struct Args {
-    /// The parent directory
-    #[clap(default_value = ".")]
-    dir: String,
-    /// Print the parent directories
-    #[clap(short,long)]
-    print: bool,
-    /// Sort the parent directories
-    #[clap(short,long)]
-    sort: bool,
-    /// Sort and limit the count of parent directories
-    #[clap(short,long,default_value = DEFAULT_PRINT_LIMMIT_STR)]
-    limit: u32,
-    /// Print and limit the count of children directories
-    #[clap(long,default_value = "9999")]
-    child_limit: u32,
-    /// Print all the parent directories, no limit
-    #[clap(short,long)]
-    all: bool,
-    /// Print child of parent directories
-    #[clap(short,long)]
-    map: bool,
-    /// Doesnt show progress which causes better performance
-    #[clap(short,long)]
-    fast: bool,
-}
+mod types;
+use types::{
+    MemoryCache,
+    FileMetaData
+};
 
 fn main() {
-    let args = Args::parse();
-    let path = Path::new(&args.dir);
-    let mut dirs: GroupList = Vec::new();
-    let mut count = 0u64;
-    let mut size = 0u64;
+    let mut cache = MemoryCache {
+        dirs: Vec::new(),
+        files: Vec::new()
+    };
 
-    let progress = init_progress_bar(args.fast);
+    let path = Path::new(".");
+    let readed_path = read_dir(path)
+        .unwrap();
+    for child in readed_path {
+        let child = child.unwrap();
+        let child_path = child.path();
 
-    println!("\n\tSize of {}", args.dir);
-
-    let start_runtime = Instant::now();
-    dir_size(path,&mut size, &mut count, &mut dirs, &progress);
-    let runtime = start_runtime.elapsed();
-
-    if args.print || args.sort || args.map || args.limit != DEFAULT_PRINT_LIMMIT {
-        print_dirs(&mut dirs, &size, &args);
+        if child_path.is_file() {
+            let child_metadata = metadata(&child_path).unwrap();
+            let filename = child_path.file_name()
+                .ok_or("-uknown-")
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .to_owned();
+            let file_metadata = FileMetaData {
+                name: filename,
+                metadata: child_metadata
+            };
+            cache.files.push(file_metadata);
+        }
+        else if child_path.is_dir() {
+            let dirname = child_path.file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .to_owned();
+            cache.dirs.push(dirname);
+        }
     }
 
-    println!(
-        "\t{} files indexed at {}\n\t{} ({} bytes)",
-        count,
-        runtime.to_hms(),
-        size.display_as_file_size(),
-        size.add_commas()
-    );
+    viewer(cache);
 }
 
 
-fn dir_size(
-    path: &Path,
-    size: &mut u64,
-    count: &mut u64,
-    dirs: &mut GroupList,
-    progress: &ProgressOptional
-) {
-    if !path.exists() { return }
-    if path.is_file() {
-        *count += 1;
-        *size += metadata(path)
+fn print_file_metadata(filename: &String, metadata: &Metadata, hover: bool) {
+    let permissions = match metadata.permissions().readonly() {
+        true  => " R ",
+        false => "R&W"
+    };
+    let size = DisplayFileSize::display_as_file_size(
+        &metadata.len()
+    );
+    let created_time = metadata.created()
             .unwrap()
-            .len();
-        return
-    }
-    if path.is_dir() {
-        let mut children = Vec::new();
-        let mut path_size = 0u64;
+            .elapsed()
+            .unwrap()
+            .to_hms();
+    let modified_time = metadata.modified()
+            .unwrap()
+            .elapsed()
+            .unwrap()
+            .to_hms();
+    let status = if hover { ">" } else { "-" };
 
-        let pb = new_progress(progress, &size.display_as_file_size());
-
-        for child in read_dir(path).unwrap() {
-            let child = child.unwrap();
-            let child_path = child.path();
-            tick_progress(&pb, &child_path);
-            dir_size(
-                &child_path,
-                &mut path_size,
-                count,
-                &mut children,
-                progress
-            );
-        }
-        *size += path_size;
-        dirs.push(Group {
-            parent: DirMap {
-                dirname: path.to_str().unwrap().to_owned(),
-                size: path_size
-            },
-            children: children
-        });
-        return
-    };
-}
-
-fn print_dirs(dirs: &mut GroupList, size: &u64, args: &Args) {
-    if args.sort || args.map {
-        dirs.sort_by(|a, b| b.parent.size.cmp(&a.parent.size))
-    }
-
-    let space_count = 10u8;
-    println!(
-        "SIZE   {}SUBS\tDIRECTORY",
-        produce_letter(space_count, 4, ' ')
+    println!(" {} {:?}\t{}\t{}\t{}\t{}",
+        status,
+        filename,
+        size,
+        permissions,
+        created_time,
+        modified_time
     );
-    let mut index = 0u32;
-    for group in dirs.iter() {
-        if !args.all && index >= args.limit {
-            break
-        }
-        index += 1;
-        print_dir_children(group, space_count, size, 1, &mut index, args);
-    }
-    println!("");
 }
 
-fn print_dir_children(
-    group: &Group,
-    space_count: u8,
-    max_size: &u64,
-    generation: u8,
-    index: &mut u32,
-    args: &Args
-) {
-    let mut children = group.children.clone();
 
-    if args.sort || args.map {
-        children.sort_by(|a, b| b.parent.size.cmp(&a.parent.size))
+fn print_dir(dir: &String, hover: bool) {
+    if hover {
+        println!(" > {:?}", dir);
     }
+    else {
+        println!(" + {:?}", dir);
+    }
+}
 
-    let mut children_index = 0u32;
-    for child in children {
-        if !args.all && *index >= args.limit || children_index >= args.child_limit {
-            println!(
-                "\t{}... other child dirs are included",
-                count_to_letter(2 * generation, ' '),
-            );
-            break
+
+fn viewer(cache: MemoryCache) {
+    let mut cursor: u8 = 0;
+    let mut index: u8 = 0;
+
+    loop {
+        print_all_children(&cache, &mut index, &mut cursor);
+
+        let direction = wait_for_readstd();
+        match direction {
+            'k' => { cursor -= 1 },
+            'j' => { cursor += 1 },
+            'w' => { cursor -= 1 },
+            's' => { cursor += 1 },
+            _ => {}
         }
-        let child_dir_size = child.parent.size.to_owned()
-            .display_as_file_size();
-        let children_count = child.children.len();
-        let children_count_string_len = format!("{}", children_count).len() as u8;
+    }
+}
+
+fn print_all_children(cache: &MemoryCache, index: &mut u8, cursor: &mut u8) {
+    // cleargin screen
+    print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
+
+    for dir in cache.dirs.iter() {
+        print_dir(&dir, index == cursor);
         *index += 1;
-        children_index += 1;
-        let styled_size = match 100 * child.parent.size / *max_size {
-            0..=5      => style(child.parent.size.display_as_file_size()),
-            6..=10     => style(child.parent.size.display_as_file_size()).green(),
-            11..=15     => style(child.parent.size.display_as_file_size()).blue(),
-            16..=20     => style(child.parent.size.display_as_file_size()).yellow(),
-            21..=100    => style(child.parent.size.display_as_file_size()).red(),
-            _           => style(child.parent.size.display_as_file_size())
-        };
-        println!(
-            "{}{}  |{}{}|{}> {}",
-            styled_size,
-            produce_letter(10, child_dir_size.len() as u8 ,' '),
-            children_count,
-            produce_letter(4, children_count_string_len , ' '),
-            count_to_letter(2 * generation, '-'),
-            child.parent.dirname,
-        );
-        if args.map && child.children.len() > 0 {
-            print_dir_children(&child, space_count, max_size, generation + 1, index, args);
-        }
-    };
+    }
+    for file in cache.files.iter() {
+        print_file_metadata(&file.name, &file.metadata, index == cursor);
+        *index += 1;
+    }
+    *index = 0;
 }
+
+
+fn wait_for_readstd() -> char {
+    let mut character = [0];
+    while let Ok(_) = stdin().read(&mut character) {
+        return character[0] as char
+    }
+
+    let _ = stdout().flush();
+
+    let ch = stdin()
+        .bytes() 
+        .next()
+        .and_then(|result| result.ok())
+        .map(|byte| byte as i32)
+        .expect("Not a char");
+
+    // if let Some('\n')=s.chars().next_back() {
+        // s.pop();
+    // }
+    // if let Some('\r')=s.chars().next_back() {
+        // s.pop();
+    // }
+
+
+    return std::char::from_u32(ch as u32)
+        .expect("Not a valid char")
+}
+
