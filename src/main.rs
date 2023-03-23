@@ -20,16 +20,19 @@ use display_u64_as_file_size::DisplayFileSize;
 mod types;
 use types::{
     MemoryCache,
-    FileMetaData
+    FileMetaData,
+    DirMetaData
 };
 
 fn main() {
-    let mut cache = MemoryCache {
-        dirs: Vec::new(),
-        files: Vec::new()
-    };
-
+    let mut cache = MemoryCache::new();
     let path = Path::new(".");
+    populate_cache_by_path(&path, &mut cache);
+
+    viewer(cache);
+}
+
+fn populate_cache_by_path(path: &Path, cache: &mut MemoryCache) {
     let readed_path = read_dir(path)
         .unwrap();
     for child in readed_path {
@@ -56,11 +59,14 @@ fn main() {
                 .to_str()
                 .unwrap()
                 .to_owned();
-            cache.dirs.push(dirname);
+            let dir_metadata = DirMetaData {
+                name: dirname,
+                cache: MemoryCache::new(),
+                size: Option::None
+            };
+            cache.dirs.push(dir_metadata);
         }
     }
-
-    viewer(cache);
 }
 
 
@@ -105,24 +111,43 @@ fn print_neatly(tail: &str, body: &str) {
 }
 
 
-fn print_dir(dir: &String, hover: bool) {
+fn print_dir(
+    dir: &DirMetaData,
+    hover: bool,
+    command: &ViewCommand,
+    cache: &mut MemoryCache
+) {
     if hover {
-        println!(" > {}", dir);
+        match command {
+            ViewCommand::Open => {
+                let dir_path = Path::new(&dir.name);
+                populate_cache_by_path(dir_path, cache);
+            },
+            ViewCommand::Size => {}
+            ViewCommand::None => { println!(" > {}", dir.name) }
+        }
     }
     else {
-        println!(" + {}", dir);
+        println!(" + {}", dir.name);
     }
 }
 
+enum ViewCommand { Open, Size, None }
 
-fn viewer(cache: MemoryCache) {
+fn viewer(mut cache: MemoryCache) {
     let mut cursor: u8 = 0;
     let mut index: u8 = 0;
+    let mut command = ViewCommand::None;
 
     loop {
-        print_all_children(&cache, &mut index, &mut cursor);
+        print_all_children(
+            &mut cache,
+            &mut index,
+            &mut cursor,
+            &command
+       );
 
-        println!("\n\r(j: down , k: up , q: quit) Hit enter to execute");
+        println!("\n\r(j: down , k: up , open dir: o , size of dir: s , q: quit) Hit enter to execute");
         print!("COMMAND ");
 
         io::stdout().flush().unwrap();
@@ -131,18 +156,26 @@ fn viewer(cache: MemoryCache) {
         match direction {
             'k' => { cursor -= 1 },
             'j' => { cursor += 1 },
+            'o' => { command = ViewCommand::Open }
+            's' => { command = ViewCommand::Size }
             'q' => { break; }
             _ => {}
         }
     }
 }
 
-fn print_all_children(cache: &MemoryCache, index: &mut u8, cursor: &mut u8) {
+fn print_all_children(
+    cache: &mut MemoryCache,
+    index: &mut u8,
+    cursor: &mut u8,
+    command: &ViewCommand
+) {
     // cleargin screen
     print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
 
-    for dir in cache.dirs.iter() {
-        print_dir(&dir, index == cursor);
+    let old_cache = cache.clone();
+    for dir in old_cache.dirs.iter() {
+        print_dir(&dir, index == cursor, command, cache);
         *index += 1;
     }
     for file in cache.files.iter() {
