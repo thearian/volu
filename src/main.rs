@@ -27,14 +27,24 @@ use types::{
 fn main() {
     let mut cache = MemoryCache::new();
     let path = Path::new(".");
-    populate_cache_by_path(&path, &mut cache);
+    populate_cache_by_path(&path, &mut cache, None);
 
     viewer(cache);
 }
 
-fn populate_cache_by_path(path: &Path, cache: &mut MemoryCache) {
-    let readed_path = read_dir(path)
-        .unwrap();
+fn populate_cache_by_path(
+    path: &Path,
+    cache: &mut MemoryCache,
+    id: Option<u32>
+) {
+    let readed_path = read_dir(path).unwrap();
+    let selected_cache = match id {
+        None => cache,
+        Some(id) => match cache.find(id) {
+            None => cache,
+            Some(c) => c
+        }
+    };
     for child in readed_path {
         let child = child.unwrap();
         let child_path = child.path();
@@ -51,7 +61,7 @@ fn populate_cache_by_path(path: &Path, cache: &mut MemoryCache) {
                 name: filename,
                 metadata: child_metadata
             };
-            cache.files.push(file_metadata);
+            selected_cache.files.push(file_metadata);
         }
         else if child_path.is_dir() {
             let dirname = child_path.file_name()
@@ -64,13 +74,18 @@ fn populate_cache_by_path(path: &Path, cache: &mut MemoryCache) {
                 cache: MemoryCache::new(),
                 size: Option::None
             };
-            cache.dirs.push(dir_metadata);
+            selected_cache.dirs.push(dir_metadata);
         }
     }
 }
 
 
-fn print_file_metadata(filename: &String, metadata: &Metadata, hover: bool) {
+fn print_file_metadata(
+    filename: &String,
+    metadata: &Metadata,
+    hover: bool,
+    tail_spaces: u8
+) {
     // let permissions = match metadata.permissions().readonly() {
         // true  => " R ",
         // false => "R&W"
@@ -91,8 +106,9 @@ fn print_file_metadata(filename: &String, metadata: &Metadata, hover: bool) {
     let status = if hover { ">" } else { " " };
 
     print_neatly(
-        &format!("{} {}", 
+        &format!("{}{} {}", 
             status,
+            spaces_by_count(tail_spaces),
             filename
             // permissions,
             // created_time,
@@ -103,11 +119,11 @@ fn print_file_metadata(filename: &String, metadata: &Metadata, hover: bool) {
 }
 
 fn print_neatly(tail: &str, body: &str) {
-    let spaces_needed = 50 - tail.len() - body.len();
-    let mut spaces = String::new();
-    for _ in 0..spaces_needed { spaces.push(' ') }
+    let spaces_needed = (
+        90 - tail.len() - body.len()
+    ) as u8;
     
-    println!("{}{}{}", tail, spaces, body);
+    println!("{}{}{}", tail, spaces_by_count(spaces_needed), body);
 }
 
 
@@ -115,16 +131,23 @@ fn print_dir(
     dir: &DirMetaData,
     hover: bool,
     command: &ViewCommand,
-    cache: &mut MemoryCache
+    cache: &mut MemoryCache,
+    tail_spaces: u8
 ) {
     if hover {
+        let spaces = spaces_by_count(tail_spaces);
+        println!(" >{} {}", spaces, dir.name);
+
         match command {
             ViewCommand::Open => {
                 let dir_path = Path::new(&dir.name);
-                populate_cache_by_path(dir_path, cache);
+                populate_cache_by_path(dir_path,
+                    cache,
+                    Some(dir.cache.id)
+                );
             },
             ViewCommand::Size => {}
-            ViewCommand::None => { println!(" > {}", dir.name) }
+            ViewCommand::None => {}
         }
     }
     else {
@@ -136,23 +159,31 @@ enum ViewCommand { Open, Size, None }
 
 fn viewer(mut cache: MemoryCache) {
     let mut cursor: u8 = 0;
-    let mut index: u8 = 0;
+    let mut index: u8;
     let mut command = ViewCommand::None;
 
     loop {
+        // cleargin screen
+        print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
+
+        // moving index to the top
+        index = 0;
+
         print_all_children(
             &mut cache,
             &mut index,
             &mut cursor,
-            &command
+            &command,
+            0
        );
 
         println!("\n\r(j: down , k: up , open dir: o , size of dir: s , q: quit) Hit enter to execute");
-        print!("COMMAND ");
-
-        io::stdout().flush().unwrap();
+        print_inline("COMMAND ");
 
         let direction = wait_for_readstd();
+
+        command = ViewCommand::None;
+
         match direction {
             'k' => { cursor -= 1 },
             'j' => { cursor += 1 },
@@ -168,21 +199,39 @@ fn print_all_children(
     cache: &mut MemoryCache,
     index: &mut u8,
     cursor: &mut u8,
-    command: &ViewCommand
+    command: &ViewCommand,
+    tail_spaces: u8,
 ) {
-    // cleargin screen
-    print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
-
-    let old_cache = cache.clone();
-    for dir in old_cache.dirs.iter() {
-        print_dir(&dir, index == cursor, command, cache);
+    let mut old_cache = cache.clone();
+    for dir in old_cache.dirs.iter_mut() {
+        print_dir(
+            &dir,
+            index == cursor,
+            command,
+            cache,
+            tail_spaces
+        );
         *index += 1;
+
+        if !dir.cache.is_empty() {
+            print_all_children(
+                &mut dir.cache,
+                index,
+                cursor,
+                command,
+                tail_spaces + 4
+            );
+        }
     }
     for file in cache.files.iter() {
-        print_file_metadata(&file.name, &file.metadata, index == cursor);
+        print_file_metadata(
+            &file.name,
+            &file.metadata,
+            index == cursor,
+            tail_spaces
+        );
         *index += 1;
     }
-    *index = 0;
 }
 
 
@@ -205,3 +254,14 @@ fn wait_for_readstd() -> char {
         .expect("Not a valid char")
 }
 
+
+fn print_inline(text: &str) {
+    print!("{}", text);
+    io::stdout().flush().unwrap();
+}
+
+fn spaces_by_count(count: u8) -> String {
+    let mut spaces = String::new();
+    for _ in 0..count { spaces.push(' ') }
+    return spaces
+}

@@ -36,6 +36,11 @@ impl MemoryCache {
 
         return None
     }
+    pub fn is_empty(&self) -> bool {
+        if self.dirs.len() > 0 { return false }
+        if self.files.len() > 0 { return false }
+        return true;
+    }
 }
 
 #[derive(Clone)]
