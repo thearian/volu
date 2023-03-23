@@ -1,32 +1,25 @@
 use std::fs::Metadata;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct MemoryCache {
-    pub id: u32,
     pub dirs:  Vec<DirMetaData>,
     pub files: Vec<FileMetaData>,
 }
 
 impl MemoryCache {
     pub fn new() -> MemoryCache {
-        let something = true;
-        let address = &something as *const bool;
-        let bad_rand =  address as u32;
         MemoryCache {
-            id: bad_rand,
             dirs: Vec::new(),
             files: Vec::new()
         }
     }
-    pub fn find(&mut self, id: u32) -> Option<&mut MemoryCache> {
-        if id == self.id { return Some(self) }
-
+    pub fn find(&mut self, id: &String) -> Option<&mut MemoryCache> {
         for dir in self.dirs.iter_mut() {
-            if id == dir.cache.id {
+            if id.eq(&dir.id) {
                 return Some(&mut dir.cache)
             }
             else {
-                match dir.cache.find(id) {
+                match dir.cache.find(&id) {
                     Some(value) => { return Some(value) },
                     None => { continue }
                 }
@@ -43,14 +36,15 @@ impl MemoryCache {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct FileMetaData {
     pub name: String,
     pub metadata: Metadata
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DirMetaData {
+    pub id: String,
     pub name: String,
     pub cache: MemoryCache,
     pub size: Option<u64>

@@ -2,7 +2,7 @@ use std::{
     fs::{
         Metadata,
         metadata,
-        read_dir,
+        read_dir, canonicalize,
     },
     path::Path,
     io,
@@ -38,7 +38,7 @@ fn main() {
 fn populate_cache_by_path(
     path: &Path,
     cache: &mut MemoryCache,
-    id: Option<u32>
+    id: Option<&String>
 ) {
     let readed_path = read_dir(path).unwrap();
     let selected_cache = match id {
@@ -72,7 +72,13 @@ fn populate_cache_by_path(
                 .to_str()
                 .unwrap()
                 .to_owned();
+            let fullpath = canonicalize(child_path)
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .to_owned();
             let dir_metadata = DirMetaData {
+                id: fullpath,
                 name: dirname,
                 cache: MemoryCache::new(),
                 size: Option::None
@@ -146,7 +152,7 @@ fn print_dir(
                 let dir_path = Path::new(&dir.name);
                 populate_cache_by_path(dir_path,
                     cache,
-                    Some(dir.cache.id)
+                    Some(&dir.id)
                 );
             },
             ViewCommand::Size => {}
@@ -166,11 +172,7 @@ fn viewer(mut cache: MemoryCache) {
         print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
         cursor.reset_index();
 
-        print_all_children(
-            &mut cache,
-            &mut cursor,
-            0
-       );
+        print_all_children( &mut cache, &mut cursor, 0);
 
         println!("\n\r{} (j: down , k: up , open dir: o , size of dir: s , q: quit) Hit enter to execute ({} {})",
             match cursor.command {
@@ -216,7 +218,7 @@ fn print_all_children(
             print_all_children(
                 &mut dir.cache,
                 cursor,
-                tail_spaces + 4
+                tail_spaces + 2
             );
         }
     }
