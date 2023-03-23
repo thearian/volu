@@ -77,12 +77,8 @@ fn populate_cache_by_path(
                 .to_str()
                 .unwrap()
                 .to_owned();
-            let dir_metadata = DirMetaData {
-                id: fullpath,
-                name: dirname,
-                cache: MemoryCache::new(),
-                size: Option::None
-            };
+            let dir_metadata = DirMetaData::new(fullpath, dirname);
+
             selected_cache.dirs.push(dir_metadata);
         }
     }
@@ -149,11 +145,17 @@ fn print_dir(
 
         match cursor.command {
             ViewCommand::Open => {
-                let dir_path = Path::new(&dir.name);
-                populate_cache_by_path(dir_path,
-                    cache,
-                    Some(&dir.id)
-                );
+                cache.find(&dir.id).unwrap().toggle();
+
+                if dir.cache.is_empty() {
+                    let dir_path = Path::new(&dir.name);
+                    populate_cache_by_path(
+                        dir_path,
+                        cache,
+                        Some(&dir.id)
+                    );
+                }
+                
             },
             ViewCommand::Size => {}
             ViewCommand::None => {}

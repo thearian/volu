@@ -2,6 +2,7 @@ use std::fs::Metadata;
 
 #[derive(Clone, Debug)]
 pub struct MemoryCache {
+    open: bool
     pub dirs:  Vec<DirMetaData>,
     pub files: Vec<FileMetaData>,
 }
@@ -9,6 +10,7 @@ pub struct MemoryCache {
 impl MemoryCache {
     pub fn new() -> MemoryCache {
         MemoryCache {
+            open: false,
             dirs: Vec::new(),
             files: Vec::new()
         }
@@ -30,9 +32,10 @@ impl MemoryCache {
         return None
     }
     pub fn is_empty(&self) -> bool {
-        if self.dirs.len() > 0 { return false }
-        if self.files.len() > 0 { return false }
-        return true;
+        self.dirs.len() == 0 && self.files.len() == 0
+    }
+    pub fn toggle(&mut self) {
+        self.open = !self.open;
     }
 }
 
@@ -47,7 +50,18 @@ pub struct DirMetaData {
     pub id: String,
     pub name: String,
     pub cache: MemoryCache,
-    pub size: Option<u64>
+    pub size: Option<u64>,
+}
+
+impl DirMetaData {
+    pub fn new(id: String, name: String) -> DirMetaData {
+        DirMetaData {
+            id,
+            name,
+            cache: MemoryCache::new(),
+            size: None
+        }
+    }
 }
 
 
