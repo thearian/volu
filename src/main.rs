@@ -139,16 +139,16 @@ fn print_dir(
     cache: &mut MemoryCache,
     tail_spaces: u8
 ) {
+    let spaces = spaces_by_count(tail_spaces);
     if hover {
-        let spaces = spaces_by_count(tail_spaces);
-        println!(" >{} {}", spaces, dir.name);
+        println!(" {}> {}", spaces, dir.name);
 
         match cursor.command {
             ViewCommand::Open => {
                 cache.find(&dir.id).unwrap().toggle();
 
                 if dir.cache.is_empty() {
-                    let dir_path = Path::new(&dir.name);
+                    let dir_path = Path::new(&dir.id);
                     populate_cache_by_path(
                         dir_path,
                         cache,
@@ -162,7 +162,7 @@ fn print_dir(
         }
     }
     else {
-        println!(" + {}", dir.name);
+        println!(" {}+ {}", spaces, dir.name);
     }
 }
 
@@ -176,12 +176,7 @@ fn viewer(mut cache: MemoryCache) {
 
         print_all_children( &mut cache, &mut cursor, 0);
 
-        println!("\n\r{} (j: down , k: up , open dir: o , size of dir: s , q: quit) Hit enter to execute ({} {})",
-            match cursor.command {
-                ViewCommand::Open => "OPEN",
-                ViewCommand::Size => "SIZE",
-                ViewCommand::None => "    "
-            },
+        println!("\n\r {}/{} (j: down , k: up , open dir: o , size of dir: s , q: quit) Hit enter to execute",
             cursor.pointer,
             cursor.index
         );
@@ -216,7 +211,7 @@ fn print_all_children(
         );
         cursor.increase_index();
 
-        if !dir.cache.is_empty() {
+        if !dir.cache.is_empty() && dir.cache.is_open() {
             print_all_children(
                 &mut dir.cache,
                 cursor,

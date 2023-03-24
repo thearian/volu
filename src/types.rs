@@ -2,7 +2,7 @@ use std::fs::Metadata;
 
 #[derive(Clone, Debug)]
 pub struct MemoryCache {
-    open: bool
+    open: bool,
     pub dirs:  Vec<DirMetaData>,
     pub files: Vec<FileMetaData>,
 }
@@ -36,6 +36,9 @@ impl MemoryCache {
     }
     pub fn toggle(&mut self) {
         self.open = !self.open;
+    }
+    pub fn is_open(&self) -> bool {
+        self.open
     }
 }
 
